@@ -34,6 +34,11 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <Image Include="directx.ico">
+      <Filter>리소스 파일</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
     <ResourceCompile Include="Resource.rc">
       <Filter>리소스 파일</Filter>
     </ResourceCompile>

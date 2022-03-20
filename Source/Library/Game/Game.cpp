@@ -79,7 +79,6 @@ namespace library
             return E_FAIL;
 
 
-
         // Create Window
         g_hInst = hInstance;
         RECT rc = { 0, 0, 800, 600 };

@@ -75,19 +75,6 @@ namespace library
         wc.hInstance = hInstance;
         wc.lpszClassName = CLASS_NAME;
 
-        //wcex.cbSize = sizeof(WNDCLASSEX);
-        //wcex.style = CS_HREDRAW | CS_VREDRAW;
-        //wcex.lpfnWndProc = WindowProc;
-        //wcex.cbClsExtra = 0;
-        //wcex.cbWndExtra = 0;
-        //wcex.hInstance = hInstance;
-        //wcex.hIcon = LoadIcon(hInstance, (LPCTSTR)IDI_TUTORIAL1);
-        //wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
-        //wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-        //wcex.lpszMenuName = nullptr;
-        //wcex.lpszClassName = L"TutorialWindowClass";
-        //wcex.hIconSm = LoadIcon(wcex.hInstance, (LPCTSTR)IDI_TUTORIAL1);
-
         if (!RegisterClass(&wc))
             return E_FAIL;
 

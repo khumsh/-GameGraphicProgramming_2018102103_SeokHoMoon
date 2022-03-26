@@ -10,6 +10,9 @@
 
 #include "Common.h"
 
+#include "Renderer/Renderer.h"
+#include "Window/MainWindow.h"
+
 namespace library
 {
     /*--------------------------------------------------------------------
@@ -48,4 +51,39 @@ namespace library
       Summary:  Render the frame
     F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F---F-F*/
     void Render();
+
+    /*C+C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C
+      Class:    Game
+      Summary:  Main game engine class
+      Methods:  Initialize
+                  Initializes the components of the game
+                Run
+                  Runs the game loop
+                GetGameName
+                  Returns the name of the game
+                Game
+                  Constructor.
+                ~Game
+                  Destructor.
+    C---C---C---C---C---C---C---C---C---C---C---C---C---C---C---C---C-C*/
+    class Game final
+    {
+    public:
+        Game(_In_ PCWSTR pszGameName);
+        Game(const Game& other) = delete;
+        Game(Game&& other) = delete;
+        Game& operator=(const Game& other) = delete;
+        Game& operator=(Game&& other) = delete;
+        ~Game() = default;
+
+        HRESULT Initialize(_In_ HINSTANCE hInstance, _In_ INT nCmdShow);
+
+        INT Run();
+
+        PCWSTR GetGameName() const;
+    private:
+        PCWSTR m_pszGameName;
+        std::unique_ptr<MainWindow> m_mainWindow;
+        std::unique_ptr<Renderer> m_renderer;
+    };
 }

@@ -119,14 +119,22 @@ namespace library
                 hr = m_immediateContext.As(&m_immediateContext1);
             }
 
-            DXGI_SWAP_CHAIN_DESC1 sd = {};
-            sd.Width = width;
-            sd.Height = height;
-            sd.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-            sd.SampleDesc.Count = 1;
-            sd.SampleDesc.Quality = 0;
-            sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-            sd.BufferCount = 1;
+            DXGI_SAMPLE_DESC sampleDesc = {
+                .Count = 1,
+                .Quality = 0
+            };
+
+            DXGI_SWAP_CHAIN_DESC1 sd =
+            {
+                .Width = width,
+                .Height = height,
+                .Format = DXGI_FORMAT_R8G8B8A8_UNORM,
+                .SampleDesc = sampleDesc,
+                .BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT,
+                .BufferCount = 1
+            };
+            
+            
 
             hr = dxgiFactory2->CreateSwapChainForHwnd(m_d3dDevice.Get(), hWnd, &sd, nullptr, nullptr, m_swapChain1.GetAddressOf());
             if (SUCCEEDED(hr))
@@ -136,19 +144,33 @@ namespace library
         }
         else
         {
+            DXGI_RATIONAL refreshRate = {
+                .Numerator = 60,
+                .Denominator = 1
+            };
+
+            DXGI_MODE_DESC bufferDesc = {
+                .Width = width,
+                .Height = height,
+                .RefreshRate = refreshRate,
+                .Format = DXGI_FORMAT_R8G8B8A8_UNORM
+            };
+
+            DXGI_SAMPLE_DESC sampleDesc = {
+                .Count = 1,
+                .Quality = 0
+            };
+
             // DirectX 11.0 systems
-            DXGI_SWAP_CHAIN_DESC sd = {};
-            sd.BufferCount = 1;
-            sd.BufferDesc.Width = width;
-            sd.BufferDesc.Height = height;
-            sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-            sd.BufferDesc.RefreshRate.Numerator = 60;
-            sd.BufferDesc.RefreshRate.Denominator = 1;
-            sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-            sd.OutputWindow = hWnd;
-            sd.SampleDesc.Count = 1;
-            sd.SampleDesc.Quality = 0;
-            sd.Windowed = TRUE;
+            DXGI_SWAP_CHAIN_DESC sd =
+            {
+                .BufferDesc = bufferDesc,
+                .SampleDesc = sampleDesc,
+                .BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT,
+                .BufferCount = 1,
+                .OutputWindow = hWnd,
+                .Windowed = TRUE
+            };
 
             hr = dxgiFactory->CreateSwapChain(m_d3dDevice.Get(), &sd, m_swapChain.GetAddressOf());
         }
@@ -174,14 +196,137 @@ namespace library
         m_immediateContext->OMSetRenderTargets(1, m_renderTargetView.GetAddressOf(), nullptr);
 
         // Setup the viewport
-        D3D11_VIEWPORT vp;
-        vp.Width = (FLOAT)width;
-        vp.Height = (FLOAT)height;
-        vp.MinDepth = 0.0f;
-        vp.MaxDepth = 1.0f;
-        vp.TopLeftX = 0;
-        vp.TopLeftY = 0;
+        D3D11_VIEWPORT vp = 
+        {
+            .TopLeftX = 0,
+            .TopLeftY = 0,
+            .Width = (FLOAT)width,
+            .Height = (FLOAT)height,
+            .MinDepth = 0.0f,
+            .MaxDepth = 1.0f
+        };
+        
         m_immediateContext->RSSetViewports(1, &vp);
+        
+        // Compile the vertex shader
+        ComPtr<ID3DBlob> pVSBlob = nullptr;
+        hr = compileShaderFromFile(
+            L"../Library/Shaders/Lab03.fxh",
+            "VS",
+            "vs_5_0",
+            pVSBlob.GetAddressOf()
+            );
+        if (FAILED(hr))
+        {
+            return hr;
+        }
+
+        // Create the vertex shader
+        hr = m_d3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, m_vertexShader.GetAddressOf());
+        if (FAILED(hr))
+        {
+            return hr;
+        }
+
+        // Define the input layout
+        D3D11_INPUT_ELEMENT_DESC aLayouts[] =
+        {
+            {
+                "POSITION",
+                0,
+                DXGI_FORMAT_R32G32B32_FLOAT,
+                0,
+                0,
+                D3D11_INPUT_PER_VERTEX_DATA,
+                0
+            },
+        };
+        
+        UINT uNumElements = ARRAYSIZE(aLayouts);
+
+        // Create the input layout
+        hr = m_d3dDevice->CreateInputLayout(
+            aLayouts,
+            uNumElements,
+            pVSBlob->GetBufferPointer(),
+            pVSBlob->GetBufferSize(),
+            m_vertexLayout.GetAddressOf());
+            
+        if(FAILED(hr))
+        {
+            return hr;
+        }
+
+        // Set the input layout
+        m_immediateContext->IASetInputLayout(m_vertexLayout.Get());
+
+        // Compile the pixel shader
+        ComPtr<ID3DBlob> pPSBlob;
+        hr = compileShaderFromFile(
+            L"../Library/Shaders/Lab03.fxh",
+            "PS",
+            "ps_5_0",
+            pPSBlob.GetAddressOf()
+            );
+        if (FAILED(hr))
+        {
+            return hr;
+        }
+
+        // Create the pixel shader
+
+        hr = m_d3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, m_pixelShader.GetAddressOf());
+        if (FAILED(hr))
+        {
+            return hr;
+        }
+            
+
+        // Create Vertex Buffer
+
+        SimpleVertex aVertices[] =
+        {
+            { XMFLOAT3(0.0f,0.5f,0.5f)},
+            { XMFLOAT3(0.5f,-0.5f,0.5f)},
+            { XMFLOAT3(-0.5f,-0.5f,0.5f)},
+        };
+
+        D3D11_BUFFER_DESC bd =
+        {
+            .ByteWidth = sizeof(SimpleVertex) * 3,
+            .Usage = D3D11_USAGE_DEFAULT,
+            .BindFlags = D3D11_BIND_VERTEX_BUFFER,
+            .CPUAccessFlags = 0,
+            .MiscFlags = 0,
+            .StructureByteStride = 0
+        };
+
+        D3D11_SUBRESOURCE_DATA initData =
+        {
+            .pSysMem = aVertices,
+            .SysMemPitch = 0,
+            .SysMemSlicePitch = 0
+        };
+
+        hr = m_d3dDevice->CreateBuffer(&bd, &initData, m_vertexBuffer.GetAddressOf());
+        if (FAILED(hr))
+        {
+            return hr;
+        }
+
+        // Set vertex buffer
+        UINT uStride = sizeof(SimpleVertex);
+        UINT uOffset = 0;
+        m_immediateContext->IASetVertexBuffers(
+            0u,             // the first input slot for binding
+            1u,             // the number of buffers in the array
+            m_vertexBuffer.GetAddressOf(), // the array of vertex buffers
+            &uStride,       // array of stride values, one for each buffer
+            &uOffset        // array of offset values, one for each buffer
+            );
+
+        // Set primitive topology
+        m_immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
         return S_OK;
     }
@@ -195,6 +340,20 @@ namespace library
     {
         // Just clear the backbuffer
         m_immediateContext->ClearRenderTargetView(m_renderTargetView.Get(), Colors::MidnightBlue);
+
+        // Render triangle
+        m_immediateContext->VSSetShader(
+            m_vertexShader.Get(),
+            nullptr,
+            0
+            );
+        m_immediateContext->PSSetShader(
+            m_pixelShader.Get(),
+            nullptr,
+            0
+            );
+        m_immediateContext->Draw(3, 0);
+
         m_swapChain->Present(0, 0);
     }
 
@@ -220,12 +379,41 @@ namespace library
       Returns:  HRESULT
                   Status code
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: Renderer::compileShaderFromFile definition (remove the comment)
-    --------------------------------------------------------------------*/
 
     HRESULT Renderer::compileShaderFromFile(_In_ PCWSTR pszFileName, _In_ PCSTR pszEntryPoint, _In_ PCSTR szShaderModel, _Outptr_ ID3DBlob** ppBlobOut)
     {
+        HRESULT hr = S_OK;
 
+        DWORD dwShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
+#ifdef _DEBUG
+        // Set the D3DCOMPILE_DEBUG flag to embed debug information in the shaders.
+        // Setting this flag improves the shader debugging experience, but still allows 
+        // the shaders to be optimized and to run exactly the way they will run in 
+        // the release configuration of this program.
+        dwShaderFlags |= D3DCOMPILE_DEBUG;
+
+        // Disable optimizations to further improve shader debugging
+        dwShaderFlags |= D3DCOMPILE_SKIP_OPTIMIZATION;
+#endif
+        ComPtr<ID3DBlob> pErrorBlob;
+        hr = D3DCompileFromFile(pszFileName,
+            nullptr,
+            nullptr,
+            pszEntryPoint,
+            szShaderModel,
+            dwShaderFlags,
+            0,
+            ppBlobOut,
+            pErrorBlob.GetAddressOf()
+        );
+        if (FAILED(hr))
+        {
+            if (pErrorBlob)
+            {
+                OutputDebugStringA(reinterpret_cast<const char*>(pErrorBlob->GetBufferPointer()));
+            }
+            return hr;
+        }
+        return S_OK;
     }
 }

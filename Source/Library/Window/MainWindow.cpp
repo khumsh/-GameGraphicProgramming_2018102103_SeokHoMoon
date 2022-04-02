@@ -21,7 +21,16 @@ namespace library
         RECT rc = { 0, 0, 800, 600 };
         AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
 
-        HRESULT hr = initialize(hInstance, nCmdShow, pszWindowName, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr);
+        HRESULT hr = initialize(
+            hInstance,
+            nCmdShow,
+            pszWindowName,
+            WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT,
+            rc.right - rc.left,
+            rc.bottom - rc.top,
+            nullptr,
+            nullptr
+        );
         if (FAILED(hr))
         {
             return hr;
@@ -39,7 +48,7 @@ namespace library
 
     PCWSTR MainWindow::GetWindowClassName() const
     {
-        return m_pszWindowName;
+        return L"ClassName";
     }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M

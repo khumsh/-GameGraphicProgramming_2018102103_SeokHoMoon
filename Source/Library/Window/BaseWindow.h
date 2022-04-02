@@ -102,12 +102,15 @@ namespace library
         {
             pThis = reinterpret_cast<DerivedType*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
         }
+
         if (pThis)
         {
             return pThis->HandleMessage(uMsg, wParam, lParam);
         }
-        
-        return DefWindowProc(hWnd, uMsg, wParam, lParam);
+        else
+        {
+            return DefWindowProc(hWnd, uMsg, wParam, lParam);
+        }
         
     }
 
@@ -119,10 +122,10 @@ namespace library
 
     template <class DerivedType>
     BaseWindow<DerivedType>::BaseWindow()
+        : m_hInstance(nullptr),
+        m_hWnd(nullptr),
+        m_pszWindowName(L"")
     {
-        m_hInstance = nullptr;
-        m_hWnd = nullptr;
-        m_pszWindowName = L"";
     }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
@@ -183,11 +186,11 @@ namespace library
         _In_opt_ HMENU hMenu
     )
     {
-        // Register class
+
         WNDCLASSEX wcex;
         wcex.cbSize = sizeof(WNDCLASSEX);
-        wcex.style = dwStyle;
-        wcex.lpfnWndProc = WindowProc;
+        wcex.style = CS_HREDRAW | CS_VREDRAW;
+        wcex.lpfnWndProc = DerivedType::WindowProc;
         wcex.cbClsExtra = 0;
         wcex.cbWndExtra = 0;
         wcex.hInstance = hInstance;
@@ -195,31 +198,13 @@ namespace library
         wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
         wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
         wcex.lpszMenuName = nullptr;
-        wcex.lpszClassName = pszWindowName;
+        wcex.lpszClassName = GetWindowClassName();
         wcex.hIconSm = LoadIcon(wcex.hInstance, (LPCTSTR)IDI_TUTORIAL1);
         if (!RegisterClassEx(&wcex))
             return E_FAIL;
 
-        DerivedType* pState = new(std::nothrow) DerivedType;
-        if (pState == nullptr)
-        { 
-            return 0; 
-        }
-
-        // Create window
         m_hInstance = hInstance;
-        RECT rc = { x, y, nWidth, nHeight };
-        AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
-        m_hWnd = CreateWindowEx(0, pszWindowName, L"Game Graphics Programming Lab02",
-            WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
-            x,
-            y,
-            nWidth,
-            nHeight,
-            hWndParent,
-            hMenu,
-            hInstance,
-            pState);
+        m_hWnd = CreateWindow(GetWindowClassName(), pszWindowName, dwStyle, x, y, nWidth, nHeight, hWndParent, hMenu, hInstance, this);
         if (!m_hWnd)
             return E_FAIL;
 

@@ -16,36 +16,54 @@
     <Filter Include="소스 파일\Game">
       <UniqueIdentifier>{dd0e0a7f-3113-4e31-8a0b-3e07dcbca72f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="소스 파일\Window">
+      <UniqueIdentifier>{a798a3d3-3cf6-439f-9033-3350f4e4d74d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Renderer">
+      <UniqueIdentifier>{c4d41e88-0e8f-4a55-b324-fcc8a1155860}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Window">
+      <UniqueIdentifier>{5b5360e7-0fc9-4826-9f7c-d5ddb11ff59d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Game">
+      <UniqueIdentifier>{6db12ac1-94a8-4e48-8e62-a7746130f087}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Renderer">
+      <UniqueIdentifier>{ce238004-4910-4d79-9aae-8fd45e6cf0bf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="리소스 파일\Shaders">
+      <UniqueIdentifier>{07baebdc-caad-409c-8463-227bed1124b5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="Game\Game.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="Resource.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="Window\BaseWindow.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>헤더 파일\Window</Filter>
     </ClInclude>
     <ClInclude Include="Window\MainWindow.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>헤더 파일\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Game.h">
+      <Filter>헤더 파일\Game</Filter>
     </ClInclude>
     <ClInclude Include="Renderer\Renderer.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>헤더 파일\Renderer</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Game\Game.cpp">
       <Filter>소스 파일\Game</Filter>
     </ClCompile>
-    <ClCompile Include="Renderer\Renderer.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
     <ClCompile Include="Window\MainWindow.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>소스 파일\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\Renderer.cpp">
+      <Filter>소스 파일\Renderer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -57,5 +75,18 @@
     <ResourceCompile Include="Resource.rc">
       <Filter>리소스 파일</Filter>
     </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Shaders\Lab03.fxh">
+      <Filter>리소스 파일\Shaders</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Shaders\Lab03_PS.hlsl">
+      <Filter>리소스 파일\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\Lab03_VS.hlsl">
+      <Filter>리소스 파일\Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

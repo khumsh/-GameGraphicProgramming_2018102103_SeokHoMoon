@@ -7,20 +7,25 @@ namespace library
       Summary:  Constructor
       Modifies: [m_driverType, m_featureLevel, m_d3dDevice, m_d3dDevice1,
                   m_immediateContext, m_immediateContext1, m_swapChain,
-                  m_swapChain1, m_renderTargetView].
+                  m_swapChain1, m_renderTargetView, m_vertexShader,
+                  m_pixelShader, m_vertexLayout, m_vertexBuffer].
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 
     Renderer::Renderer()
+        : m_driverType(D3D_DRIVER_TYPE_NULL),
+        m_featureLevel(D3D_FEATURE_LEVEL_11_0),
+        m_d3dDevice(nullptr),
+        m_d3dDevice1(nullptr),
+        m_immediateContext(nullptr),
+        m_immediateContext1(nullptr),
+        m_swapChain(nullptr),
+        m_swapChain1(nullptr),
+        m_renderTargetView(nullptr),
+        m_vertexShader(nullptr),
+        m_pixelShader(nullptr),
+        m_vertexLayout(nullptr),
+        m_vertexBuffer(nullptr)
     {
-        m_driverType = D3D_DRIVER_TYPE_NULL;
-        m_featureLevel = D3D_FEATURE_LEVEL_11_0;
-        m_d3dDevice = nullptr;
-        m_d3dDevice1 = nullptr;
-        m_immediateContext = nullptr;
-        m_immediateContext1 = nullptr;
-        m_swapChain = nullptr;
-        m_swapChain1 = nullptr;
-        m_renderTargetView = nullptr;
     }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
@@ -30,7 +35,8 @@ namespace library
                   Handle to the window
       Modifies: [m_d3dDevice, m_featureLevel, m_immediateContext,
                   m_d3dDevice1, m_immediateContext1, m_swapChain1,
-                  m_swapChain, m_renderTargetView].
+                  m_swapChain, m_renderTargetView, m_vertexShader,
+                  m_vertexLayout, m_pixelShader, m_vertexBuffer].
       Returns:  HRESULT
                   Status code
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
@@ -86,7 +92,6 @@ namespace library
         ComPtr<IDXGIFactory1>           dxgiFactory(nullptr);
         {
             ComPtr<IDXGIDevice>           dxgiDevice(nullptr);
-            // IDXGIDevice* dxgiDevice = nullptr;
             hr = m_d3dDevice.As(&dxgiDevice);
             if (SUCCEEDED(hr))
             {
@@ -191,5 +196,36 @@ namespace library
         // Just clear the backbuffer
         m_immediateContext->ClearRenderTargetView(m_renderTargetView.Get(), Colors::MidnightBlue);
         m_swapChain->Present(0, 0);
+    }
+
+    /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+      Method:   Renderer::compileShaderFromFile
+      Summary:  Helper for compiling shaders with D3DCompile
+      Args:     PCWSTR pszFileName
+                  A pointer to a constant null-terminated string that
+                  contains the name of the file that contains the
+                  shader code
+                PCSTR pszEntryPoint
+                  A pointer to a constant null-terminated string that
+                  contains the name of the shader entry point function
+                  where shader execution begins
+                PCSTR pszShaderModel
+                  A pointer to a constant null-terminated string that
+                  specifies the shader target or set of shader
+                  features to compile against
+                ID3DBlob** ppBlobOut
+                  A pointer to a variable that receives a pointer to
+                  the ID3DBlob interface that you can use to access
+                  the compiled code
+      Returns:  HRESULT
+                  Status code
+    M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
+    /*--------------------------------------------------------------------
+      TODO: Renderer::compileShaderFromFile definition (remove the comment)
+    --------------------------------------------------------------------*/
+
+    HRESULT Renderer::compileShaderFromFile(_In_ PCWSTR pszFileName, _In_ PCSTR pszEntryPoint, _In_ PCSTR szShaderModel, _Outptr_ ID3DBlob** ppBlobOut)
+    {
+
     }
 }

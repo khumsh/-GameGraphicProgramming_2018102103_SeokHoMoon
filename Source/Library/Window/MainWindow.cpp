@@ -18,18 +18,16 @@ namespace library
 
     HRESULT MainWindow::Initialize(_In_ HINSTANCE hInstance, _In_ INT nCmdShow, _In_ PCWSTR pszWindowName)
     {
-        HRESULT hr = initialize(hInstance, nCmdShow, pszWindowName,
-            CS_HREDRAW | CS_VREDRAW,
-            0,
-            0,
-            800,
-            600,
-            nullptr,
-            nullptr);
-        if (FAILED(hr))
-            return 0;
+        RECT rc = { 0, 0, 800, 600 };
+        AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
 
-        return hr;
+        HRESULT hr = initialize(hInstance, nCmdShow, pszWindowName, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr);
+        if (FAILED(hr))
+        {
+            return hr;
+        }
+
+        return S_OK;
     }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M

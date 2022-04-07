@@ -91,4 +91,24 @@ namespace library
     {
         return m_pszGameName;
     }
+
+    /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+      Method:   Game::GetWindow
+      Summary:  Returns the main window
+      Returns:  std::unique_ptr<MainWindow>&
+                  The main window
+    M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
+    /*--------------------------------------------------------------------
+      TODO: Game::GetWindow definition (remove the comment)
+    --------------------------------------------------------------------*/
+
+    /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+      Method:   Game::GetRenderer
+      Summary:  Returns the renderer
+      Returns:  std::unique_ptr<Renderer>&
+                  The renderer
+    M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
+    /*--------------------------------------------------------------------
+      TODO: Game::GetRenderer definition (remove the comment)
+    --------------------------------------------------------------------*/
 }

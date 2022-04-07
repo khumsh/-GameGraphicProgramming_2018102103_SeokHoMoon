@@ -34,6 +34,18 @@
     <Filter Include="리소스 파일\Shaders">
       <UniqueIdentifier>{07baebdc-caad-409c-8463-227bed1124b5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="리소스 파일\Shaders\Lab03">
+      <UniqueIdentifier>{7746594b-10b7-4421-b047-e976e834e65a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="리소스 파일\Shaders\Lab04">
+      <UniqueIdentifier>{14da933b-abc6-4e77-839f-3524ae61bad3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Shader">
+      <UniqueIdentifier>{795868c4-b721-4f02-842f-ee9591a52701}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Shader">
+      <UniqueIdentifier>{cc853bca-f8e4-4533-b8bc-a907dcfa71b5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common.h">
@@ -54,6 +66,24 @@
     <ClInclude Include="Renderer\Renderer.h">
       <Filter>헤더 파일\Renderer</Filter>
     </ClInclude>
+    <ClInclude Include="..\Game\Cube\BaseCube.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\DataTypes.h">
+      <Filter>헤더 파일\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\Renderable.h">
+      <Filter>헤더 파일\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Shaders\Shader.h">
+      <Filter>헤더 파일\Shader</Filter>
+    </ClInclude>
+    <ClInclude Include="Shaders\PixelShader.h">
+      <Filter>헤더 파일\Shader</Filter>
+    </ClInclude>
+    <ClInclude Include="Shaders\VertexShader.h">
+      <Filter>헤더 파일\Shader</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Game\Game.cpp">
@@ -64,6 +94,21 @@
     </ClCompile>
     <ClCompile Include="Renderer\Renderer.cpp">
       <Filter>소스 파일\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Game\Cube\BaseCube.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\Renderable.cpp">
+      <Filter>소스 파일\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Shaders\Shader.cpp">
+      <Filter>소스 파일\Shader</Filter>
+    </ClCompile>
+    <ClCompile Include="Shaders\PixelShader.cpp">
+      <Filter>소스 파일\Shader</Filter>
+    </ClCompile>
+    <ClCompile Include="Shaders\VertexShader.cpp">
+      <Filter>소스 파일\Shader</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -78,15 +123,24 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\Lab03.fxh">
-      <Filter>리소스 파일\Shaders</Filter>
+      <Filter>리소스 파일\Shaders\Lab03</Filter>
+    </None>
+    <None Include="..\Game\Shaders\Shaders.fxh">
+      <Filter>리소스 파일\Shaders\Lab04</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\Lab03_PS.hlsl">
-      <Filter>리소스 파일\Shaders</Filter>
+      <Filter>리소스 파일\Shaders\Lab03</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\Lab03_VS.hlsl">
-      <Filter>리소스 파일\Shaders</Filter>
+      <Filter>리소스 파일\Shaders\Lab03</Filter>
+    </FxCompile>
+    <FxCompile Include="..\Game\Shaders\PS.hlsl">
+      <Filter>리소스 파일\Shaders\Lab04</Filter>
+    </FxCompile>
+    <FxCompile Include="..\Game\Shaders\VS.hlsl">
+      <Filter>리소스 파일\Shaders\Lab04</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

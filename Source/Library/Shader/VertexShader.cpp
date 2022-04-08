@@ -15,9 +15,12 @@ namespace library
                   to compile against
       Modifies: [m_vertexShader].
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: VertexShader::VertexShader definition (remove the comment)
-    --------------------------------------------------------------------*/
+
+    VertexShader::VertexShader(_In_ PCWSTR pszFileName, _In_ PCSTR pszEntryPoint, _In_ PCSTR pszShaderModel)
+        : Shader(pszFileName, pszEntryPoint, pszShaderModel),
+        m_vertexShader(nullptr)
+    {
+    }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   VertexShader::Initialize
@@ -27,9 +30,59 @@ namespace library
       Returns:  HRESULT
                   Status code
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: VertexShader::Initialize definition (remove the comment)
-    --------------------------------------------------------------------*/
+
+    HRESULT VertexShader::Initialize(_In_ ID3D11Device* pDevice)
+    {
+        HRESULT hr = S_OK;
+
+        // Compile the vertex shader
+        ComPtr<ID3DBlob> pVSBlob = nullptr;
+        hr = compile(pVSBlob.GetAddressOf());
+        if (FAILED(hr))
+        {
+            return hr;
+        }
+
+        // Create the vertex shader
+        hr = pDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, m_vertexShader.GetAddressOf());
+        if (FAILED(hr))
+        {
+            return hr;
+        }
+
+        // Define the input layout
+        D3D11_INPUT_ELEMENT_DESC aLayouts[] =
+        {
+            {
+                "POSITION",
+                0,
+                DXGI_FORMAT_R32G32B32_FLOAT,
+                0,
+                0,
+                D3D11_INPUT_PER_VERTEX_DATA,
+                0
+            },
+        };
+
+        UINT uNumElements = ARRAYSIZE(aLayouts);
+
+        // Create the input layout
+        hr = pDevice->CreateInputLayout(
+            aLayouts,
+            uNumElements,
+            pVSBlob->GetBufferPointer(),
+            pVSBlob->GetBufferSize(),
+            m_vertexLayout.GetAddressOf());
+
+        if (FAILED(hr))
+        {
+            return hr;
+        }
+
+
+        
+        return S_OK;
+    }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   VertexShader::GetVertexShader
@@ -37,9 +90,11 @@ namespace library
       Returns:  ComPtr<ID3D11VertexShader>&
                   Vertex shader. Could be a nullptr
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: VertexShader::GetVertexShader definition (remove the comment)
-    --------------------------------------------------------------------*/
+
+    ComPtr<ID3D11VertexShader>& VertexShader::GetVertexShader()
+    {
+        return m_vertexShader;
+    }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   VertexShader::GetVertexLayout
@@ -47,7 +102,9 @@ namespace library
       Returns:  ComPtr<ID3D11InputLayout>&
                   Vertex input layout
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: VertexShader::GetVertexLayout definition (remove the comment)
-    --------------------------------------------------------------------*/
+
+    ComPtr<ID3D11InputLayout>& VertexShader::GetVertexLayout()
+    {
+        return m_vertexLayout;
+    }
 }

@@ -10,10 +10,10 @@
 
 #include <memory>
 
-/*--------------------------------------------------------------------
-  TODO: Include custom cubes (remove the comment)
---------------------------------------------------------------------*/
 #include "Game/Game.h"
+
+#include "Cube/YourCube.h"
+#include "Cube/CustomCube.h"
 
 /*F+F+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   Function: wWinMain
@@ -57,9 +57,34 @@ INT WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
         return 0;
     }
 
-    /*--------------------------------------------------------------------
-      TODO: Add your cubes and set their shaders (remove the comment)
-    --------------------------------------------------------------------*/
+    // YourCube
+    if (FAILED(game->GetRenderer()->AddRenderable(L"YourCube", std::make_shared<YourCube>())))
+    {
+        return 0;
+    }
+    if (FAILED(game->GetRenderer()->SetVertexShaderOfRenderable(L"YourCube", L"MainShader")))
+    {
+        return 0;
+    }
+    if (FAILED(game->GetRenderer()->SetPixelShaderOfRenderable(L"YourCube", L"MainShader")))
+    {
+        return 0;
+    }
+
+    // CustomCube
+    if (FAILED(game->GetRenderer()->AddRenderable(L"CustomCube", std::make_shared<CustomCube>())))
+    {
+        return 0;
+    }
+    if (FAILED(game->GetRenderer()->SetVertexShaderOfRenderable(L"CustomCube", L"MainShader")))
+    {
+        return 0;
+    }
+    if (FAILED(game->GetRenderer()->SetPixelShaderOfRenderable(L"CustomCube", L"MainShader")))
+    {
+        return 0;
+    }
+
 
     if (FAILED(game->Initialize(hInstance, nCmdShow)))
     {

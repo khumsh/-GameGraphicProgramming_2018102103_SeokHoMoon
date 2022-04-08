@@ -60,12 +60,22 @@ namespace library
 
     INT Game::Run()
     {
+        LARGE_INTEGER StartingTime, EndingTime;
+        LARGE_INTEGER Frequency;
+
+        float ElapsedTime;
+
+        QueryPerformanceFrequency(&Frequency);
+        QueryPerformanceCounter(&StartingTime);
+
         // Main message loop
         MSG msg = { 0 };
-
+        
         // Main message loop
         while (WM_QUIT != msg.message)
         {
+            
+
             if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
             {
                 TranslateMessage(&msg);
@@ -73,9 +83,20 @@ namespace library
             }
             else
             {
+                // update the elapsed time
+                QueryPerformanceCounter(&EndingTime);
+                ElapsedTime = (FLOAT)(EndingTime.QuadPart - StartingTime.QuadPart);
+                ElapsedTime /= (FLOAT)Frequency.QuadPart;
+
+                // update the renderer
+                m_renderer->Update(ElapsedTime);
+
+                // render game
                 m_renderer->Render(); // Do some rendering
             }
         }
+
+        
 
         return static_cast<INT>(msg.wParam);
     }
@@ -98,9 +119,12 @@ namespace library
       Returns:  std::unique_ptr<MainWindow>&
                   The main window
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: Game::GetWindow definition (remove the comment)
-    --------------------------------------------------------------------*/
+
+    std::unique_ptr<MainWindow>& Game::GetWindow()
+    {
+        return m_mainWindow;
+    }
+    
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   Game::GetRenderer
@@ -108,7 +132,9 @@ namespace library
       Returns:  std::unique_ptr<Renderer>&
                   The renderer
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: Game::GetRenderer definition (remove the comment)
-    --------------------------------------------------------------------*/
+
+    std::unique_ptr<Renderer>& Game::GetRenderer()
+    {
+        return m_renderer;
+    }
 }

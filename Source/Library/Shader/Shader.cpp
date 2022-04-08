@@ -15,9 +15,13 @@ namespace library
                   to compile against
       Modifies: [m_pszFileName, m_pszEntryPoint, m_pszShaderModel].
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: Shader::Shader definition (remove the comment)
-    --------------------------------------------------------------------*/
+
+    Shader::Shader(_In_ PCWSTR pszFileName, _In_ PCSTR pszEntryPoint, _In_ PCSTR pszShaderModel)
+        : m_pszFileName(pszFileName),
+        m_pszEntryPoint(pszEntryPoint),
+        m_pszShaderModel(pszShaderModel)
+    {
+    }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   Shader::GetFileName
@@ -25,9 +29,11 @@ namespace library
       Returns:  PCWSTR
                   Shader file name
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: Shader::GetFileName definition (remove the comment)
-    --------------------------------------------------------------------*/
+
+    PCWSTR Shader::GetFileName() const
+    {
+        return m_pszFileName;
+    }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   Shader::compile
@@ -38,7 +44,42 @@ namespace library
       Returns:  HRESULT
                   Status code
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: Shader::compile definition (remove the comment)
-    --------------------------------------------------------------------*/
+
+    HRESULT Shader::compile(_Outptr_ ID3DBlob** ppOutBlob)
+    {
+        HRESULT hr = S_OK;
+
+        DWORD dwShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
+#ifdef _DEBUG
+        // Set the D3DCOMPILE_DEBUG flag to embed debug information in the shaders.
+        // Setting this flag improves the shader debugging experience, but still allows 
+        // the shaders to be optimized and to run exactly the way they will run in 
+        // the release configuration of this program.
+        dwShaderFlags |= D3DCOMPILE_DEBUG;
+
+        // Disable optimizations to further improve shader debugging
+        dwShaderFlags |= D3DCOMPILE_SKIP_OPTIMIZATION;
+#endif
+        ComPtr<ID3DBlob> pErrorBlob;
+        hr = D3DCompileFromFile(m_pszFileName,
+            nullptr,
+            nullptr,
+            m_pszEntryPoint,
+            m_pszShaderModel,
+            dwShaderFlags,
+            0,
+            ppOutBlob,
+            pErrorBlob.GetAddressOf()
+        );
+        if (FAILED(hr))
+        {
+            if (pErrorBlob)
+            {
+                OutputDebugStringA(reinterpret_cast<const char*>(pErrorBlob->GetBufferPointer()));
+            }
+            return hr;
+        }
+
+        return S_OK;
+    }
 }

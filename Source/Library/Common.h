@@ -1,8 +1,8 @@
 ﻿/*+===================================================================
   File:      COMMON.H
   Summary:   Common header file that contains common header files and
-			 macros used for the Library project of Game Graphics
-			 Programming course.
+             macros used for the Library project of Game Graphics
+             Programming course.
   Functions:
   � 2022 Kyung Hee University
 ===================================================================+*/
@@ -45,3 +45,30 @@ constexpr LPCWSTR PSZ_COURSE_TITLE = L"Game Graphics Programming";
 
 using namespace Microsoft::WRL;
 using namespace DirectX;
+
+namespace library
+{
+    /*S+S+++S+++S+++S+++S+++S+++S+++S+++S+++S+++S+++S+++S+++S+++S+++S+++S
+      Struct:   DirectionsInput
+      Summary:  Data structure that stores keyboard movement data
+    S---S---S---S---S---S---S---S---S---S---S---S---S---S---S---S---S-S*/
+    struct DirectionsInput
+    {
+        BOOL bFront;
+        BOOL bLeft;
+        BOOL bBack;
+        BOOL bRight;
+        BOOL bUp;
+        BOOL bDown;
+    };
+
+    /*S+S+++S+++S+++S+++S+++S+++S+++S+++S+++S+++S+++S+++S+++S+++S+++S+++S
+      Struct:   MouseRelativeMovement
+      Summary:  Data structure that stores mouse relative movement data
+    S---S---S---S---S---S---S---S---S---S---S---S---S---S---S---S---S-S*/
+    struct MouseRelativeMovement
+    {
+        LONG X;
+        LONG Y;
+    };
+}

@@ -12,8 +12,8 @@
 
 #include "Game/Game.h"
 
-#include "Cube/YourCube.h"
 #include "Cube/CustomCube.h"
+#include "Cube/YourCube.h"
 
 /*F+F+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   Function: wWinMain
@@ -53,20 +53,6 @@ INT WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
     std::shared_ptr<library::PixelShader> pixelShader = std::make_shared<library::PixelShader>(L"Shaders/Shaders.fxh", "PS", "ps_5_0");
     if (FAILED(game->GetRenderer()->AddPixelShader(L"MainShader", pixelShader)))
-    {
-        return 0;
-    }
-
-    // YourCube
-    if (FAILED(game->GetRenderer()->AddRenderable(L"YourCube", std::make_shared<YourCube>())))
-    {
-        return 0;
-    }
-    if (FAILED(game->GetRenderer()->SetVertexShaderOfRenderable(L"YourCube", L"MainShader")))
-    {
-        return 0;
-    }
-    if (FAILED(game->GetRenderer()->SetPixelShaderOfRenderable(L"YourCube", L"MainShader")))
     {
         return 0;
     }

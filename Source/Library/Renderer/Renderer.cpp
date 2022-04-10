@@ -23,7 +23,7 @@ namespace library
         m_renderTargetView(nullptr),
         m_depthStencil(nullptr),
         m_depthStencilView(nullptr),
-        m_view(XMMATRIX()),
+        m_camera(XMVECTOR()),
         m_projection(XMMATRIX()),
         m_renderables(std::unordered_map<PCWSTR, std::shared_ptr<Renderable>>()),
         m_vertexShaders(std::unordered_map<PCWSTR, std::shared_ptr<VertexShader>>()),
@@ -269,14 +269,8 @@ namespace library
         {
             return hr;
         }
-            
-        // Create View and Projection Matrices
-        XMVECTOR eye = XMVectorSet( 0.0f, 1.0f, -5.0f, 0.0f );
-        XMVECTOR at = XMVectorSet( 0.0f, 1.0f, 0.0f, 0.0f );
-        XMVECTOR up = XMVectorSet( 0.0f, 1.0f, 0.0f, 0.0f );
-        
-        m_view = XMMatrixLookAtLH(eye, at, up);
 
+        // projection
         float fovAngleY = XM_PIDIV2;
         float aspectRatio = width / height;
         float nearZ = 0.01f;
@@ -391,6 +385,25 @@ namespace library
     }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+      Method:   Renderer::HandleInput
+      Summary:  Add the pixel shader into the renderer and initialize it
+      Args:     const DirectionsInput& directions
+                  Data structure containing keyboard input data
+                const MouseRelativeMovement& mouseRelativeMovement
+                  Data structure containing mouse relative input data
+      Modifies: [m_camera].
+    M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
+
+    void Renderer::HandleInput(_In_ const DirectionsInput& directions, _In_ const MouseRelativeMovement& mouseRelativeMovement, _In_ FLOAT deltaTime)
+    {
+        m_camera.HandleInput(
+            directions,
+            mouseRelativeMovement,
+            deltaTime
+        );
+    }
+
+    /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   Renderer::Update
       Summary:  Update the renderables each frame
       Args:     FLOAT deltaTime
@@ -454,7 +467,7 @@ namespace library
             //   XMMATRIX is a row - major matrix, however HLSL expects column - major matrix
             ConstantBuffer cb;
             cb.World = XMMatrixTranspose(it_renderables->second->GetWorldMatrix());
-            cb.View = XMMatrixTranspose(m_view);
+            cb.View = XMMatrixTranspose(m_camera.GetView());
             cb.Projection = XMMatrixTranspose(m_projection);
             m_immediateContext->UpdateSubresource(it_renderables->second->GetConstantBuffer().Get(), 0, NULL, &cb, 0, 0);
 

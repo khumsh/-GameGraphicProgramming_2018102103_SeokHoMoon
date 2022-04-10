@@ -57,7 +57,7 @@ namespace library
             .CPUAccessFlags = 0,
             .MiscFlags = 0,
         };
-        
+
         D3D11_SUBRESOURCE_DATA index_initData =
         {
             .pSysMem = getIndices(),
@@ -73,7 +73,7 @@ namespace library
         {
             return hr;
         }
-            
+
         // Create the constant buffer
 
         ConstantBuffer cb;
@@ -86,13 +86,13 @@ namespace library
             .MiscFlags = 0,
             .StructureByteStride = 0,
         };
-        
+
         D3D11_SUBRESOURCE_DATA constant_initData = {
             .pSysMem = &cb,
             .SysMemPitch = 0,
             .SysMemSlicePitch = 0,
         };
-        
+
 
         hr = pDevice->CreateBuffer(
             &constant_bd,
@@ -108,7 +108,7 @@ namespace library
         //    world matrix is simply an identity matrix
         cb.World = XMMatrixTranspose(XMMatrixIdentity());
 
-       
+
 
         return S_OK;
     }

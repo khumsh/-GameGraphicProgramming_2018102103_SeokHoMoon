@@ -60,21 +60,21 @@ namespace library
 
     INT Game::Run()
     {
-        LARGE_INTEGER startingTime, endingTime;
-        LARGE_INTEGER frequency;
+        LARGE_INTEGER StartingTime, EndingTime;
+        LARGE_INTEGER Frequency;
 
-        float elapsedTime;
+        float ElapsedTime;
 
-        QueryPerformanceFrequency(&frequency);
-        QueryPerformanceCounter(&startingTime);
+        QueryPerformanceFrequency(&Frequency);
+        QueryPerformanceCounter(&StartingTime);
 
         // Main message loop
         MSG msg = { 0 };
-        
+
         // Main message loop
         while (WM_QUIT != msg.message)
         {
-            
+
 
             if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
             {
@@ -84,30 +84,19 @@ namespace library
             else
             {
                 // update the elapsed time
-                QueryPerformanceCounter(&endingTime);
-                elapsedTime = (FLOAT)(endingTime.QuadPart - startingTime.QuadPart);
-                elapsedTime /= (FLOAT)frequency.QuadPart;
-
-                // handling input
-                m_renderer->HandleInput(
-                    m_mainWindow->GetDirections(),
-                    m_mainWindow->GetMouseRelativeMovement(),
-                    elapsedTime
-                );
-                m_mainWindow->ResetMouseMovement();
-
+                QueryPerformanceCounter(&EndingTime);
+                ElapsedTime = (FLOAT)(EndingTime.QuadPart - StartingTime.QuadPart);
+                ElapsedTime /= (FLOAT)Frequency.QuadPart;
 
                 // update the renderer
-                m_renderer->Update(elapsedTime);
-
-                QueryPerformanceCounter(&startingTime);
+                m_renderer->Update(ElapsedTime);
 
                 // render game
                 m_renderer->Render(); // Do some rendering
             }
         }
 
-        
+
 
         return static_cast<INT>(msg.wParam);
     }
@@ -135,7 +124,7 @@ namespace library
     {
         return m_mainWindow;
     }
-    
+
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   Game::GetRenderer

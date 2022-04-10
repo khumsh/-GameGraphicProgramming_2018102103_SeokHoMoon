@@ -23,7 +23,7 @@ namespace library
         m_renderTargetView(nullptr),
         m_depthStencil(nullptr),
         m_depthStencilView(nullptr),
-        m_camera(XMVECTOR()),
+        m_view(XMMATRIX()),
         m_projection(XMMATRIX()),
         m_renderables(std::unordered_map<PCWSTR, std::shared_ptr<Renderable>>()),
         m_vertexShaders(std::unordered_map<PCWSTR, std::shared_ptr<VertexShader>>()),
@@ -136,8 +136,8 @@ namespace library
                 .BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT,
                 .BufferCount = 1
             };
-            
-            
+
+
 
             hr = dxgiFactory2->CreateSwapChainForHwnd(m_d3dDevice.Get(), hWnd, &sd, nullptr, nullptr, m_swapChain1.GetAddressOf());
             if (SUCCEEDED(hr))
@@ -199,7 +199,7 @@ namespace library
         m_immediateContext->OMSetRenderTargets(1, m_renderTargetView.GetAddressOf(), nullptr);
 
         // Setup the viewport
-        D3D11_VIEWPORT vp = 
+        D3D11_VIEWPORT vp =
         {
             .TopLeftX = 0,
             .TopLeftY = 0,
@@ -208,11 +208,11 @@ namespace library
             .MinDepth = 0.0f,
             .MaxDepth = 1.0f
         };
-        
-        m_immediateContext->RSSetViewports(1, &vp);
-        
 
-        
+        m_immediateContext->RSSetViewports(1, &vp);
+
+
+
 
         //Create depth stencil texture and the depth stencil view
         //Initialize view matrixand the projection matrix
@@ -230,7 +230,7 @@ namespace library
             .Quality = 0
         };
 
-        D3D11_TEXTURE2D_DESC descDepth = 
+        D3D11_TEXTURE2D_DESC descDepth =
         {
             .Width = width,
             .Height = height,
@@ -244,7 +244,7 @@ namespace library
             .MiscFlags = 0
         };
 
-        
+
         hr = m_d3dDevice->CreateTexture2D(&descDepth, NULL, m_depthStencil.GetAddressOf());
         if (FAILED(hr))
         {
@@ -257,25 +257,31 @@ namespace library
             .MipSlice = 0
         };
 
-        D3D11_DEPTH_STENCIL_VIEW_DESC descDSV = 
+        D3D11_DEPTH_STENCIL_VIEW_DESC descDSV =
         {
             .Format = descDepth.Format,
             .ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D,
             .Texture2D = texture2D
         };
-        
+
         hr = m_d3dDevice->CreateDepthStencilView(m_depthStencil.Get(), &descDSV, m_depthStencilView.GetAddressOf());
         if (FAILED(hr))
         {
             return hr;
         }
 
-        // projection
+        // Create View and Projection Matrices
+        XMVECTOR eye = XMVectorSet(0.0f, 1.0f, -5.0f, 0.0f);
+        XMVECTOR at = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+        XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+
+        m_view = XMMatrixLookAtLH(eye, at, up);
+
         float fovAngleY = XM_PIDIV2;
         float aspectRatio = width / height;
         float nearZ = 0.01f;
         float farZ = 100.0f;
-        
+
         m_projection = XMMatrixPerspectiveFovLH(fovAngleY, aspectRatio, nearZ, farZ);
 
         // Initializing Objects
@@ -385,25 +391,6 @@ namespace library
     }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
-      Method:   Renderer::HandleInput
-      Summary:  Add the pixel shader into the renderer and initialize it
-      Args:     const DirectionsInput& directions
-                  Data structure containing keyboard input data
-                const MouseRelativeMovement& mouseRelativeMovement
-                  Data structure containing mouse relative input data
-      Modifies: [m_camera].
-    M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-
-    void Renderer::HandleInput(_In_ const DirectionsInput& directions, _In_ const MouseRelativeMovement& mouseRelativeMovement, _In_ FLOAT deltaTime)
-    {
-        m_camera.HandleInput(
-            directions,
-            mouseRelativeMovement,
-            deltaTime
-        );
-    }
-
-    /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   Renderer::Update
       Summary:  Update the renderables each frame
       Args:     FLOAT deltaTime
@@ -413,7 +400,7 @@ namespace library
     void Renderer::Update(_In_ FLOAT deltaTime)
     {
         std::unordered_map<PCWSTR, std::shared_ptr<Renderable>>::iterator it_renderables;
-        
+
         for (it_renderables = m_renderables.begin(); it_renderables != m_renderables.end(); it_renderables++)
         {
             it_renderables->second->Update(deltaTime);
@@ -439,7 +426,7 @@ namespace library
         for (it_renderables = m_renderables.begin(); it_renderables != m_renderables.end(); it_renderables++)
         {
             // Set the vertex buffer, index buffer, and the input layout
-            
+
             // Set vertex buffer
             UINT uStride = sizeof(SimpleVertex);
             UINT uOffset = 0;
@@ -467,7 +454,7 @@ namespace library
             //   XMMATRIX is a row - major matrix, however HLSL expects column - major matrix
             ConstantBuffer cb;
             cb.World = XMMatrixTranspose(it_renderables->second->GetWorldMatrix());
-            cb.View = XMMatrixTranspose(m_camera.GetView());
+            cb.View = XMMatrixTranspose(m_view);
             cb.Projection = XMMatrixTranspose(m_projection);
             m_immediateContext->UpdateSubresource(it_renderables->second->GetConstantBuffer().Get(), 0, NULL, &cb, 0, 0);
 
@@ -500,7 +487,7 @@ namespace library
             m_immediateContext->DrawIndexed(it_renderables->second->GetNumIndices(), 0, 0);
 
         }
-        
+
 
         m_swapChain->Present(0, 0);
     }
@@ -523,9 +510,9 @@ namespace library
         {
             return E_FAIL;
         }
-        else 
+        else
         {
-            if (m_vertexShaders.contains(pszVertexShaderName)) 
+            if (m_vertexShaders.contains(pszVertexShaderName))
             {
                 m_renderables.find(pszRenderableName)->second->SetVertexShader(m_vertexShaders.find(pszVertexShaderName)->second);
                 return S_OK;
@@ -550,13 +537,13 @@ namespace library
 
     HRESULT Renderer::SetPixelShaderOfRenderable(_In_ PCWSTR pszRenderableName, _In_ PCWSTR pszPixelShaderName)
     {
-        if (!m_renderables.contains(pszRenderableName)) 
+        if (!m_renderables.contains(pszRenderableName))
         {
             return E_FAIL;
         }
-        else 
+        else
         {
-            if (m_vertexShaders.contains(pszPixelShaderName)) 
+            if (m_vertexShaders.contains(pszPixelShaderName))
             {
                 m_renderables.find(pszRenderableName)->second->SetPixelShader(m_pixelShaders.find(pszPixelShaderName)->second);
                 return S_OK;

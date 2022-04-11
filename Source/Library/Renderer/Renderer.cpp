@@ -269,12 +269,12 @@ namespace library
         {
             return hr;
         }
-
+            
         // Create View and Projection Matrices
-        XMVECTOR eye = XMVectorSet(0.0f, 1.0f, -5.0f, 0.0f);
-        XMVECTOR at = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-        XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-
+        XMVECTOR eye = XMVectorSet( 0.0f, 1.0f, -5.0f, 0.0f );
+        XMVECTOR at = XMVectorSet( 0.0f, 1.0f, 0.0f, 0.0f );
+        XMVECTOR up = XMVectorSet( 0.0f, 1.0f, 0.0f, 0.0f );
+        
         m_view = XMMatrixLookAtLH(eye, at, up);
 
         float fovAngleY = XM_PIDIV2;

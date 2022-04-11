@@ -13,7 +13,6 @@
 #include "Game/Game.h"
 
 #include "Cube/YourCube.h"
-#include "Cube/OriginCube.h"
 #include "Cube/CustomCube.h"
 
 /*F+F+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -68,20 +67,6 @@ INT WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
         return 0;
     }
     if (FAILED(game->GetRenderer()->SetPixelShaderOfRenderable(L"YourCube", L"MainShader")))
-    {
-        return 0;
-    }
-
-    // OriginCube
-    if (FAILED(game->GetRenderer()->AddRenderable(L"OriginCube", std::make_shared<OriginCube>())))
-    {
-        return 0;
-    }
-    if (FAILED(game->GetRenderer()->SetVertexShaderOfRenderable(L"OriginCube", L"MainShader")))
-    {
-        return 0;
-    }
-    if (FAILED(game->GetRenderer()->SetPixelShaderOfRenderable(L"OriginCube", L"MainShader")))
     {
         return 0;
     }

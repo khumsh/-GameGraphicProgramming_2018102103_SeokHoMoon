@@ -6,11 +6,13 @@ namespace library
       Method:   Renderer::Renderer
       Summary:  Constructor
       Modifies: [m_driverType, m_featureLevel, m_d3dDevice, m_d3dDevice1,
-                  m_immediateContext, m_immediateContext1, m_swapChain,
-                  m_swapChain1, m_renderTargetView, m_vertexShader,
-                  m_pixelShader, m_vertexLayout, m_vertexBuffer].
+                 m_immediateContext, m_immediateContext1, m_swapChain,
+                 m_swapChain1, m_renderTargetView, m_depthStencil,
+                 m_depthStencilView, m_cbChangeOnResize, m_camera,
+                 m_projection, m_renderables, m_vertexShaders,
+                 m_pixelShaders].
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-
+    
     Renderer::Renderer()
         : m_driverType(D3D_DRIVER_TYPE_NULL),
         m_featureLevel(D3D_FEATURE_LEVEL_11_0),
@@ -23,11 +25,13 @@ namespace library
         m_renderTargetView(nullptr),
         m_depthStencil(nullptr),
         m_depthStencilView(nullptr),
-        m_view(XMMATRIX()),
+        m_cbChangeOnResize(nullptr),
+        m_padding(),
+        m_camera(XMVECTOR()),
         m_projection(XMMATRIX()),
-        m_renderables(std::unordered_map<PCWSTR, std::shared_ptr<Renderable>>()),
-        m_vertexShaders(std::unordered_map<PCWSTR, std::shared_ptr<VertexShader>>()),
-        m_pixelShaders(std::unordered_map<PCWSTR, std::shared_ptr<PixelShader>>())
+        m_renderables(std::unordered_map<std::wstring, std::shared_ptr<Renderable>>()),
+        m_vertexShaders(std::unordered_map<std::wstring, std::shared_ptr<VertexShader>>()),
+        m_pixelShaders(std::unordered_map<std::wstring, std::shared_ptr<PixelShader>>())
     {
     }
 
@@ -37,13 +41,14 @@ namespace library
       Args:     HWND hWnd
                   Handle to the window
       Modifies: [m_d3dDevice, m_featureLevel, m_immediateContext,
-                  m_d3dDevice1, m_immediateContext1, m_swapChain1,
-                  m_swapChain, m_renderTargetView, m_vertexShader,
-                  m_vertexLayout, m_pixelShader, m_vertexBuffer].
+                 m_d3dDevice1, m_immediateContext1, m_swapChain1,
+                 m_swapChain, m_renderTargetView, m_cbChangeOnResize,
+                 m_projection, m_camera, m_vertexShaders,
+                 m_pixelShaders, m_renderables].
       Returns:  HRESULT
                   Status code
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-
+    
     HRESULT Renderer::Initialize(_In_ HWND hWnd)
     {
         HRESULT hr = S_OK;
@@ -269,14 +274,8 @@ namespace library
         {
             return hr;
         }
-            
-        // Create View and Projection Matrices
-        XMVECTOR eye = XMVectorSet( 0.0f, 1.0f, -5.0f, 0.0f );
-        XMVECTOR at = XMVectorSet( 0.0f, 1.0f, 0.0f, 0.0f );
-        XMVECTOR up = XMVectorSet( 0.0f, 1.0f, 0.0f, 0.0f );
-        
-        m_view = XMMatrixLookAtLH(eye, at, up);
 
+        // projection
         float fovAngleY = XM_PIDIV2;
         float aspectRatio = width / height;
         float nearZ = 0.01f;
@@ -286,14 +285,14 @@ namespace library
 
         // Initializing Objects
 
-        std::unordered_map<PCWSTR, std::shared_ptr<Renderable>>::iterator it_renderables;
+        std::unordered_map<std::wstring, std::shared_ptr<Renderable>>::iterator it_renderables;
 
         for (it_renderables = m_renderables.begin(); it_renderables != m_renderables.end(); it_renderables++)
         {
             it_renderables->second->Initialize(m_d3dDevice.Get(), m_immediateContext.Get());
         }
 
-        std::unordered_map<PCWSTR, std::shared_ptr<VertexShader>>::iterator it_vertexShaders;
+        std::unordered_map<std::wstring, std::shared_ptr<VertexShader>>::iterator it_vertexShaders;
 
         for (it_vertexShaders = m_vertexShaders.begin(); it_vertexShaders != m_vertexShaders.end(); it_vertexShaders++)
         {
@@ -301,7 +300,7 @@ namespace library
         }
 
 
-        std::unordered_map<PCWSTR, std::shared_ptr<PixelShader>>::iterator it_pixelShaders;
+        std::unordered_map<std::wstring, std::shared_ptr<PixelShader>>::iterator it_pixelShaders;
 
         for (it_pixelShaders = m_pixelShaders.begin(); it_pixelShaders != m_pixelShaders.end(); it_pixelShaders++)
         {
@@ -323,7 +322,7 @@ namespace library
       Returns:  HRESULT
                   Status code.
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-
+    
     HRESULT Renderer::AddRenderable(_In_ PCWSTR pszRenderableName, _In_ const std::shared_ptr<Renderable>& renderable)
     {
         if (m_renderables.contains(pszRenderableName))
@@ -349,7 +348,7 @@ namespace library
       Returns:  HRESULT
                   Status code
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-
+    
     HRESULT Renderer::AddVertexShader(_In_ PCWSTR pszVertexShaderName, _In_ const std::shared_ptr<VertexShader>& vertexShader)
     {
         if (m_vertexShaders.contains(pszVertexShaderName))
@@ -375,7 +374,7 @@ namespace library
       Returns:  HRESULT
                   Status code
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-
+    
     HRESULT Renderer::AddPixelShader(_In_ PCWSTR pszPixelShaderName, _In_ const std::shared_ptr<PixelShader>& pixelShader)
     {
         if (m_pixelShaders.contains(pszPixelShaderName))
@@ -391,15 +390,34 @@ namespace library
     }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+      Method:   Renderer::HandleInput
+      Summary:  Add the pixel shader into the renderer and initialize it
+      Args:     const DirectionsInput& directions
+                  Data structure containing keyboard input data
+                const MouseRelativeMovement& mouseRelativeMovement
+                  Data structure containing mouse relative input data
+      Modifies: [m_camera].
+    M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
+    
+    void Renderer::HandleInput(_In_ const DirectionsInput& directions, _In_ const MouseRelativeMovement& mouseRelativeMovement, _In_ FLOAT deltaTime)
+    {
+        m_camera.HandleInput(
+            directions,
+            mouseRelativeMovement,
+            deltaTime
+        );
+    }
+
+    /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   Renderer::Update
       Summary:  Update the renderables each frame
       Args:     FLOAT deltaTime
                   Time difference of a frame
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-
+    
     void Renderer::Update(_In_ FLOAT deltaTime)
     {
-        std::unordered_map<PCWSTR, std::shared_ptr<Renderable>>::iterator it_renderables;
+        std::unordered_map<std::wstring, std::shared_ptr<Renderable>>::iterator it_renderables;
 
         for (it_renderables = m_renderables.begin(); it_renderables != m_renderables.end(); it_renderables++)
         {
@@ -411,7 +429,7 @@ namespace library
       Method:   Renderer::Render
       Summary:  Render the frame
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-
+    
     void Renderer::Render()
     {
         // Just clear the backbuffer
@@ -420,7 +438,7 @@ namespace library
         // Clear depth stencil view
         m_immediateContext->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 
-        std::unordered_map<PCWSTR, std::shared_ptr<Renderable>>::iterator it_renderables;
+        std::unordered_map<std::wstring, std::shared_ptr<Renderable>>::iterator it_renderables;
 
         // for each renderables
         for (it_renderables = m_renderables.begin(); it_renderables != m_renderables.end(); it_renderables++)
@@ -454,7 +472,7 @@ namespace library
             //   XMMATRIX is a row - major matrix, however HLSL expects column - major matrix
             ConstantBuffer cb;
             cb.World = XMMatrixTranspose(it_renderables->second->GetWorldMatrix());
-            cb.View = XMMatrixTranspose(m_view);
+            cb.View = XMMatrixTranspose(m_camera.GetView());
             cb.Projection = XMMatrixTranspose(m_projection);
             m_immediateContext->UpdateSubresource(it_renderables->second->GetConstantBuffer().Get(), 0, NULL, &cb, 0, 0);
 
@@ -503,7 +521,7 @@ namespace library
       Returns:  HRESULT
                   Status code
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-
+    
     HRESULT Renderer::SetVertexShaderOfRenderable(_In_ PCWSTR pszRenderableName, _In_ PCWSTR pszVertexShaderName)
     {
         if (!m_renderables.contains(pszRenderableName))
@@ -534,7 +552,7 @@ namespace library
       Returns:  HRESULT
                   Status code
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-
+    
     HRESULT Renderer::SetPixelShaderOfRenderable(_In_ PCWSTR pszRenderableName, _In_ PCWSTR pszPixelShaderName)
     {
         if (!m_renderables.contains(pszRenderableName))
@@ -560,7 +578,7 @@ namespace library
       Returns:  D3D_DRIVER_TYPE
                   The Direct3D driver type used
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-
+    
     D3D_DRIVER_TYPE Renderer::GetDriverType() const
     {
         return m_driverType;

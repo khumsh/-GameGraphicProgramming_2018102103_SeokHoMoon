@@ -6,19 +6,38 @@
 //--------------------------------------------------------------------------------------
 
 //--------------------------------------------------------------------------------------
+// Global Variables
+//--------------------------------------------------------------------------------------
+/*--------------------------------------------------------------------
+  TODO: Declare a diffuse texture and a sampler state (remove the comment)
+--------------------------------------------------------------------*/
+
+//--------------------------------------------------------------------------------------
 // Constant Buffer Variables
 //--------------------------------------------------------------------------------------
 /*C+C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C
-  Cbuffer:  ConstantBuffer
-  Summary:  Constant buffer used for space transformations
+  Cbuffer:  cbChangeOnCameraMovement
+  Summary:  Constant buffer used for view transformation
 C---C---C---C---C---C---C---C---C---C---C---C---C---C---C---C---C-C*/
+/*--------------------------------------------------------------------
+  TODO: cbChangeOnCameraMovement definition (remove the comment)
+--------------------------------------------------------------------*/
 
-cbuffer ConstantBuffer : register(b0)
-{
-	matrix World;
-	matrix View;
-	matrix Projection;
-}
+/*C+C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C
+  Cbuffer:  cbChangeOnResize
+  Summary:  Constant buffer used for projection transformation
+C---C---C---C---C---C---C---C---C---C---C---C---C---C---C---C---C-C*/
+/*--------------------------------------------------------------------
+  TODO: cbChangeOnResize definition (remove the comment)
+--------------------------------------------------------------------*/
+
+/*C+C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C
+  Cbuffer:  cbChangesEveryFrame
+  Summary:  Constant buffer used for world transformation
+C---C---C---C---C---C---C---C---C---C---C---C---C---C---C---C---C-C*/
+/*--------------------------------------------------------------------
+  TODO: cbChangesEveryFrame definition (remove the comment)
+--------------------------------------------------------------------*/
 
 //--------------------------------------------------------------------------------------
 /*C+C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C

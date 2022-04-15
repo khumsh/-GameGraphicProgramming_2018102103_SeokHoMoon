@@ -17,7 +17,8 @@ namespace library
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 
     VertexShader::VertexShader(_In_ PCWSTR pszFileName, _In_ PCSTR pszEntryPoint, _In_ PCSTR pszShaderModel)
-        : Shader(pszFileName, pszEntryPoint, pszShaderModel),
+        :Shader(pszFileName, pszEntryPoint, pszShaderModel),
+        m_vertexLayout(nullptr),
         m_vertexShader(nullptr)
     {
     }
@@ -34,54 +35,40 @@ namespace library
     HRESULT VertexShader::Initialize(_In_ ID3D11Device* pDevice)
     {
         HRESULT hr = S_OK;
-
-        // Compile the vertex shader
-        ComPtr<ID3DBlob> pVSBlob = nullptr;
-        hr = compile(pVSBlob.GetAddressOf());
+        ComPtr<ID3DBlob> VSBlob;
+        //Compile a vertex shader
+        hr = compile(VSBlob.GetAddressOf());
         if (FAILED(hr))
         {
             return hr;
         }
-
-        // Create the vertex shader
-        hr = pDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, m_vertexShader.GetAddressOf());
+        //Create the Direct3D Vertex Shader object
+        hr = pDevice->CreateVertexShader(VSBlob->GetBufferPointer(),
+            VSBlob->GetBufferSize(),
+            nullptr,
+            m_vertexShader.GetAddressOf()
+        );
         if (FAILED(hr))
         {
             return hr;
         }
-
         // Define the input layout
-        D3D11_INPUT_ELEMENT_DESC aLayouts[] =
+        D3D11_INPUT_ELEMENT_DESC layout[] =
         {
-            {
-                "POSITION",
-                0,
-                DXGI_FORMAT_R32G32B32_FLOAT,
-                0,
-                0,
-                D3D11_INPUT_PER_VERTEX_DATA,
-                0
-            },
+            { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0}
         };
-
-        UINT uNumElements = ARRAYSIZE(aLayouts);
-
+        UINT numElements = ARRAYSIZE(layout);
         // Create the input layout
-        hr = pDevice->CreateInputLayout(
-            aLayouts,
-            uNumElements,
-            pVSBlob->GetBufferPointer(),
-            pVSBlob->GetBufferSize(),
-            m_vertexLayout.GetAddressOf());
-
+        hr = pDevice->CreateInputLayout(layout,
+            numElements,
+            VSBlob->GetBufferPointer(),
+            VSBlob->GetBufferSize(),
+            &m_vertexLayout
+        );
         if (FAILED(hr))
-        {
             return hr;
-        }
-
-
-        
-        return S_OK;
+        return hr;
     }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M

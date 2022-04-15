@@ -10,6 +10,7 @@
 
 #include "Common.h"
 
+#include "Camera/Camera.h"
 #include "Renderer/DataTypes.h"
 #include "Renderer/Renderable.h"
 #include "Shader/PixelShader.h"
@@ -25,19 +26,21 @@ namespace library
       Methods:  Initialize
                   Creates Direct3D device and swap chain
                 AddRenderable
-                  Add a renderable object
+                  Add a renderable object and initialize the object
                 AddVertexShader
-                  Add a vertex shader object
+                  Add the vertex shader into the renderer
                 AddPixelShader
-                  Add a pixel shader object
+                  Add the pixel shader into the renderer
+                HandleInput
+                  Handles the keyboard / mouse input
                 Update
                   Update the renderables each frame
                 Render
                   Renders the frame
                 SetVertexShaderOfRenderable
-                  Set vertex shader to the renderable
+                  Sets the vertex shader for a renderable
                 SetPixelShaderOfRenderable
-                  Set pixel shader to the renderable
+                  Sets the pixel shader for a renderable
                 GetDriverType
                   Returns the Direct3D driver type
                 Renderer
@@ -60,6 +63,7 @@ namespace library
         HRESULT AddVertexShader(_In_ PCWSTR pszVertexShaderName, _In_ const std::shared_ptr<VertexShader>& vertexShader);
         HRESULT AddPixelShader(_In_ PCWSTR pszPixelShaderName, _In_ const std::shared_ptr<PixelShader>& pixelShader);
 
+        void HandleInput(_In_ const DirectionsInput& directions, _In_ const MouseRelativeMovement& mouseRelativeMovement, _In_ FLOAT deltaTime);
         void Update(_In_ FLOAT deltaTime);
         void Render();
 
@@ -80,11 +84,13 @@ namespace library
         ComPtr<ID3D11RenderTargetView> m_renderTargetView;
         ComPtr<ID3D11Texture2D> m_depthStencil;
         ComPtr<ID3D11DepthStencilView> m_depthStencilView;
-        XMMATRIX m_view;
+        ComPtr<ID3D11Buffer> m_cbChangeOnResize;
+        BYTE m_padding[8];
+        Camera m_camera;
         XMMATRIX m_projection;
 
-        std::unordered_map<PCWSTR, std::shared_ptr<Renderable>> m_renderables;
-        std::unordered_map<PCWSTR, std::shared_ptr<VertexShader>> m_vertexShaders;
-        std::unordered_map<PCWSTR, std::shared_ptr<PixelShader>> m_pixelShaders;
+        std::unordered_map<std::wstring, std::shared_ptr<Renderable>> m_renderables;
+        std::unordered_map<std::wstring, std::shared_ptr<VertexShader>> m_vertexShaders;
+        std::unordered_map<std::wstring, std::shared_ptr<PixelShader>> m_pixelShaders;
     };
 }

@@ -10,16 +10,13 @@ namespace library
                  m_padding, m_cameraForward, m_cameraRight, m_cameraUp,
                  m_eye, m_at, m_up, m_rotation, m_view].
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: Camera::Camera definition (remove the comment)
-    --------------------------------------------------------------------*/
 
     Camera::Camera(_In_ const XMVECTOR& position)
         : m_yaw(), m_pitch(), m_moveLeftRight(), m_moveBackForward(),
         m_moveUpDown(), m_travelSpeed(), m_rotationSpeed(),
         m_padding(), m_cameraForward(XMVECTOR()), m_cameraRight(XMVECTOR()),
         m_cameraUp(XMVECTOR()), m_eye(position), m_at(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f)), m_up(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f)),
-        m_rotation(XMMATRIX()), m_view(XMMATRIX())
+        m_rotation(XMMATRIX()), m_view(XMMATRIX()), m_cbChangeOnCameraMovement(nullptr)
     {
     }
 
@@ -145,13 +142,23 @@ namespace library
                   Pointer to a Direct3D 11 device
       Modifies: [m_cbChangeOnCameraMovement].
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: Camera::Initialize definition (remove the comment)
-    --------------------------------------------------------------------*/
 
     HRESULT Camera::Initialize(_In_ ID3D11Device* device)
     {
-
+        //create constant buffer
+        D3D11_BUFFER_DESC constantBd = {
+            .ByteWidth = sizeof(CBChangeOnCameraMovement),
+            .Usage = D3D11_USAGE_DEFAULT,
+            .BindFlags = D3D11_BIND_CONSTANT_BUFFER,
+            .CPUAccessFlags = 0,
+            .MiscFlags = 0,
+            .StructureByteStride = 0
+        };
+        HRESULT hr = device->CreateBuffer(&constantBd, nullptr, m_cbChangeOnCameraMovement.GetAddressOf());
+        if (FAILED(hr))
+        {
+            return hr;
+        }
     }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M

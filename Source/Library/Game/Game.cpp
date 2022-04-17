@@ -60,13 +60,13 @@ namespace library
 
     INT Game::Run()
     {
-        LARGE_INTEGER StartingTime, EndingTime;
-        LARGE_INTEGER Frequency;
+        LARGE_INTEGER startingTime, endingTime;
+        LARGE_INTEGER frequency;
 
-        float ElapsedTime;
+        float elapsedTime;
 
-        QueryPerformanceFrequency(&Frequency);
-        QueryPerformanceCounter(&StartingTime);
+        QueryPerformanceFrequency(&frequency);
+        QueryPerformanceCounter(&startingTime);
 
         // Main message loop
         MSG msg = { 0 };
@@ -84,12 +84,23 @@ namespace library
             else
             {
                 // update the elapsed time
-                QueryPerformanceCounter(&EndingTime);
-                ElapsedTime = (FLOAT)(EndingTime.QuadPart - StartingTime.QuadPart);
-                ElapsedTime /= (FLOAT)Frequency.QuadPart;
+                QueryPerformanceCounter(&endingTime);
+                elapsedTime = (FLOAT)(endingTime.QuadPart - startingTime.QuadPart);
+                elapsedTime /= (FLOAT)frequency.QuadPart;
+
+                // handling input
+                m_renderer->HandleInput(
+                    m_mainWindow->GetDirections(),
+                    m_mainWindow->GetMouseRelativeMovement(),
+                    elapsedTime
+                );
+                m_mainWindow->ResetMouseMovement();
+
 
                 // update the renderer
-                m_renderer->Update(ElapsedTime);
+                m_renderer->Update(elapsedTime);
+
+                QueryPerformanceCounter(&startingTime);
 
                 // render game
                 m_renderer->Render(); // Do some rendering

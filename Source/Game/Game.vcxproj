@@ -97,6 +97,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Cube\BaseCube.cpp" />
+    <ClCompile Include="Cube\Cube.cpp" />
     <ClCompile Include="Cube\CustomCube.cpp" />
     <ClCompile Include="Cube\OriginCube.cpp" />
     <ClCompile Include="Cube\YourCube.cpp" />
@@ -104,6 +105,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Cube\BaseCube.h" />
+    <ClInclude Include="Cube\Cube.h" />
     <ClInclude Include="Cube\CustomCube.h" />
     <ClInclude Include="Cube\OriginCube.h" />
     <ClInclude Include="Cube\YourCube.h" />
@@ -114,6 +116,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\Shaders.fxh" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="brickwall.dds" />
+    <Image Include="seafloor.dds" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

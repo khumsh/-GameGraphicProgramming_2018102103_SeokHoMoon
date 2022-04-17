@@ -14,6 +14,7 @@
 #include <source_location>
 
 #include "Cube/Cube.h"
+#include "Cube/OriginCube.h"
 #include "Game/Game.h"
 
 /*F+F+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -71,6 +72,23 @@ INT WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
     {
         return 0;
     }
+
+    std::shared_ptr<OriginCube> originCube = std::make_shared<OriginCube>("brickwall.dds");
+    if (FAILED(game->GetRenderer()->AddRenderable(L"OriginCube", originCube)))
+    {
+        return 0;
+    }
+
+    if (FAILED(game->GetRenderer()->SetVertexShaderOfRenderable(L"OriginCube", L"MainShader")))
+    {
+        return 0;
+    }
+
+    if (FAILED(game->GetRenderer()->SetPixelShaderOfRenderable(L"OriginCube", L"MainShader")))
+    {
+        return 0;
+    }
+
 
     if (FAILED(game->Initialize(hInstance, nCmdShow)))
     {

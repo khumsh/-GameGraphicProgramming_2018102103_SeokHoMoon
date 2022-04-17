@@ -13,14 +13,17 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="리소스 파일\Lab04">
-      <UniqueIdentifier>{52c0041b-155e-464c-a8a3-6051ce5837f4}</UniqueIdentifier>
-    </Filter>
     <Filter Include="헤더 파일\Cube">
       <UniqueIdentifier>{cb13400c-7b46-426c-8b63-f67a524ebcf4}</UniqueIdentifier>
     </Filter>
     <Filter Include="소스 파일\Cube">
       <UniqueIdentifier>{15f90bbb-6b37-4f59-a657-21373548e3aa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="리소스 파일\dds">
+      <UniqueIdentifier>{a4a4d4d3-b81a-43d3-b587-2a77e1ca9fd2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="리소스 파일\Shader">
+      <UniqueIdentifier>{771a1db1-a532-4801-ab5a-fbd72b8ce482}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -39,19 +42,17 @@
     <ClCompile Include="Cube\CustomCube.cpp">
       <Filter>소스 파일\Cube</Filter>
     </ClCompile>
+    <ClCompile Include="Cube\Cube.cpp">
+      <Filter>소스 파일\Cube</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\PS.hlsl">
-      <Filter>리소스 파일\Lab04</Filter>
+      <Filter>리소스 파일\Shader</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\VS.hlsl">
-      <Filter>리소스 파일\Lab04</Filter>
+      <Filter>리소스 파일\Shader</Filter>
     </FxCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Shaders\Shaders.fxh">
-      <Filter>리소스 파일\Lab04</Filter>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Cube\BaseCube.h">
@@ -66,5 +67,21 @@
     <ClInclude Include="Cube\CustomCube.h">
       <Filter>헤더 파일\Cube</Filter>
     </ClInclude>
+    <ClInclude Include="Cube\Cube.h">
+      <Filter>헤더 파일\Cube</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="seafloor.dds">
+      <Filter>리소스 파일\dds</Filter>
+    </Image>
+    <Image Include="brickwall.dds">
+      <Filter>리소스 파일\dds</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Shaders\Shaders.fxh">
+      <Filter>리소스 파일\Shader</Filter>
+    </None>
   </ItemGroup>
 </Project>

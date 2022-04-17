@@ -44,7 +44,6 @@ namespace library
         }
 
         // Create the pixel shader
-
         hr = pDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, m_pixelShader.GetAddressOf());
         if (FAILED(hr))
         {

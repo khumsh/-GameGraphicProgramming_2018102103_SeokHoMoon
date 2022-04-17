@@ -36,13 +36,15 @@ namespace library
     {
         HRESULT hr = S_OK;
         ComPtr<ID3DBlob> VSBlob;
-        //Compile a vertex shader
+
+        // Compile a vertex shader
         hr = compile(VSBlob.GetAddressOf());
         if (FAILED(hr))
         {
             return hr;
         }
-        //Create the Direct3D Vertex Shader object
+
+        // Create the Direct3D Vertex Shader object
         hr = pDevice->CreateVertexShader(VSBlob->GetBufferPointer(),
             VSBlob->GetBufferSize(),
             nullptr,
@@ -52,22 +54,42 @@ namespace library
         {
             return hr;
         }
+
         // Define the input layout
         D3D11_INPUT_ELEMENT_DESC layout[] =
         {
-            { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-            { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0}
+            { 
+                "POSITION",
+                0,
+                DXGI_FORMAT_R32G32B32_FLOAT,
+                0,
+                0,
+                D3D11_INPUT_PER_VERTEX_DATA,
+                0
+            },
+            { 
+                "TEXCOORD", 
+                0u, 
+                DXGI_FORMAT_R32G32_FLOAT, 
+                0u, 
+                12u, 
+                D3D11_INPUT_PER_VERTEX_DATA, 
+                0u
+            }
         };
         UINT numElements = ARRAYSIZE(layout);
+
         // Create the input layout
         hr = pDevice->CreateInputLayout(layout,
             numElements,
             VSBlob->GetBufferPointer(),
             VSBlob->GetBufferSize(),
-            &m_vertexLayout
+            m_vertexLayout.GetAddressOf()
         );
         if (FAILED(hr))
             return hr;
+
+
         return hr;
     }
 

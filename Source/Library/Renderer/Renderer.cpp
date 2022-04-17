@@ -284,19 +284,28 @@ namespace library
         m_projection = XMMatrixPerspectiveFovLH(fovAngleY, aspectRatio, nearZ, farZ);
 
         // Initializing Objects
+        m_camera.Initialize(m_d3dDevice.Get());
 
         std::unordered_map<std::wstring, std::shared_ptr<Renderable>>::iterator it_renderables;
 
         for (it_renderables = m_renderables.begin(); it_renderables != m_renderables.end(); it_renderables++)
         {
-            it_renderables->second->Initialize(m_d3dDevice.Get(), m_immediateContext.Get());
+            hr = it_renderables->second->Initialize(m_d3dDevice.Get(), m_immediateContext.Get());
+            if (FAILED(hr))
+            {
+                return hr;
+            }
         }
 
         std::unordered_map<std::wstring, std::shared_ptr<VertexShader>>::iterator it_vertexShaders;
 
         for (it_vertexShaders = m_vertexShaders.begin(); it_vertexShaders != m_vertexShaders.end(); it_vertexShaders++)
         {
-            it_vertexShaders->second->Initialize(m_d3dDevice.Get());
+            hr = it_vertexShaders->second->Initialize(m_d3dDevice.Get());
+            if (FAILED(hr))
+            {
+                return hr;
+            }
         }
 
 
@@ -304,9 +313,38 @@ namespace library
 
         for (it_pixelShaders = m_pixelShaders.begin(); it_pixelShaders != m_pixelShaders.end(); it_pixelShaders++)
         {
-            it_pixelShaders->second->Initialize(m_d3dDevice.Get());
+            hr = it_pixelShaders->second->Initialize(m_d3dDevice.Get());
+            if (FAILED(hr))
+            {
+                return hr;
+            }
         }
 
+
+        // create constant buffer
+        D3D11_BUFFER_DESC constantBd = {
+            .ByteWidth = sizeof(CBChangeOnResize),
+            .Usage = D3D11_USAGE_DEFAULT,
+            .BindFlags = D3D11_BIND_CONSTANT_BUFFER,
+            .CPUAccessFlags = 0,
+            .MiscFlags = 0,
+            .StructureByteStride = 0
+        };
+
+        hr = m_d3dDevice->CreateBuffer(&constantBd, nullptr, m_cbChangeOnResize.GetAddressOf());
+        if (FAILED(hr))
+        {
+            return hr;
+        }
+
+        // CBChangeOnResize constant buffer must be created, and set when initializing the renderer
+        CBChangeOnResize cb_projection = {
+                .Projection = XMMatrixTranspose(m_projection)
+        };
+
+        m_immediateContext->UpdateSubresource(m_cbChangeOnResize.Get(), 0, nullptr, &cb_projection, 0, 0);
+
+        m_immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
         return S_OK;
     }
@@ -436,7 +474,16 @@ namespace library
         m_immediateContext->ClearRenderTargetView(m_renderTargetView.Get(), Colors::MidnightBlue);
 
         // Clear depth stencil view
+        // Clear the depth buffer
         m_immediateContext->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+
+        // Create camera constant buffer and update
+        CBChangeOnCameraMovement cb_view = {
+               .View = XMMatrixTranspose(m_camera.GetView())
+        };
+
+        m_immediateContext->UpdateSubresource(m_camera.GetConstantBuffer().Get(), 0, nullptr, &cb_view, 0, 0);
+
 
         std::unordered_map<std::wstring, std::shared_ptr<Renderable>>::iterator it_renderables;
 
@@ -467,19 +514,22 @@ namespace library
             // Set input layout
             m_immediateContext->IASetInputLayout(it_renderables->second->GetVertexLayout().Get());
 
+
+
             // Update constant buffer
             //   You must transpose the matrices when passing them to GPU!!
             //   XMMATRIX is a row - major matrix, however HLSL expects column - major matrix
-            ConstantBuffer cb;
-            cb.World = XMMatrixTranspose(it_renderables->second->GetWorldMatrix());
-            cb.View = XMMatrixTranspose(m_camera.GetView());
-            cb.Projection = XMMatrixTranspose(m_projection);
-            m_immediateContext->UpdateSubresource(it_renderables->second->GetConstantBuffer().Get(), 0, NULL, &cb, 0, 0);
 
-            // Render the triangles
+            // Create renderable constant buffer and update
+            CBChangesEveryFrame cb_world =
+            {
+                .World = XMMatrixTranspose(it_renderables->second->GetWorldMatrix())
+            };
 
-            // Set primitive topology
-            m_immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+            m_immediateContext->UpdateSubresource(it_renderables->second->GetConstantBuffer().Get(), 0, NULL, &cb_world, 0, 0);
+
+
+            // Set shadersand constant buffers, shader resources, and samplers
 
             // Set vertex shader
             m_immediateContext->VSSetShader(
@@ -488,9 +538,20 @@ namespace library
                 0
             );
 
+            // VS set
             m_immediateContext->VSSetConstantBuffers(
-                0u,
-                1u,
+                0, 
+                1,
+                m_camera.GetConstantBuffer().GetAddressOf()
+            );
+            m_immediateContext->VSSetConstantBuffers(
+                1, 
+                1,
+                m_cbChangeOnResize.GetAddressOf()
+            );
+            m_immediateContext->VSSetConstantBuffers(
+                2, 
+                1, 
                 it_renderables->second->GetConstantBuffer().GetAddressOf()
             );
 
@@ -498,7 +559,21 @@ namespace library
             m_immediateContext->PSSetShader(
                 it_renderables->second->GetPixelShader().Get(),
                 nullptr,
-                0
+                0u
+            );
+
+            // Texture resource view of the renderable must be set into the pixel shader
+            m_immediateContext->PSSetShaderResources(
+                0,
+                1,
+                it_renderables->second->GetTextureResourceView().GetAddressOf()
+            );
+
+            // Sampler state of the renderable must be set into the pixel shader
+            m_immediateContext->PSSetSamplers(
+                0,
+                1,
+                it_renderables->second->GetSamplerState().GetAddressOf()
             );
 
             // draw

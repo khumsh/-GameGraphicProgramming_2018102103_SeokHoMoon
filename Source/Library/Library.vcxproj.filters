@@ -31,17 +31,23 @@
     <Filter Include="헤더 파일\Renderer">
       <UniqueIdentifier>{ce238004-4910-4d79-9aae-8fd45e6cf0bf}</UniqueIdentifier>
     </Filter>
-    <Filter Include="리소스 파일\Shaders">
-      <UniqueIdentifier>{07baebdc-caad-409c-8463-227bed1124b5}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="리소스 파일\Shaders\Lab03">
-      <UniqueIdentifier>{7746594b-10b7-4421-b047-e976e834e65a}</UniqueIdentifier>
-    </Filter>
     <Filter Include="헤더 파일\Shader">
       <UniqueIdentifier>{795868c4-b721-4f02-842f-ee9591a52701}</UniqueIdentifier>
     </Filter>
     <Filter Include="소스 파일\Shader">
       <UniqueIdentifier>{cc853bca-f8e4-4533-b8bc-a907dcfa71b5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Camera">
+      <UniqueIdentifier>{bd091c81-4459-4f87-bb2f-8ff99b89c28d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Camera">
+      <UniqueIdentifier>{953d6cd4-6d45-4cb4-91bd-3080656337da}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Texture">
+      <UniqueIdentifier>{f5e22a42-61fa-433e-9a14-65c6158e91dd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Texture">
+      <UniqueIdentifier>{94fa134a-0fad-460e-9efa-14c1fc37f029}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -78,6 +84,12 @@
     <ClInclude Include="Shader\VertexShader.h">
       <Filter>헤더 파일\Shader</Filter>
     </ClInclude>
+    <ClInclude Include="Camera\Camera.h">
+      <Filter>헤더 파일\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Texture\DDSTextureLoader.h">
+      <Filter>헤더 파일\Texture</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Game\Game.cpp">
@@ -101,6 +113,12 @@
     <ClCompile Include="Shader\VertexShader.cpp">
       <Filter>소스 파일\Shader</Filter>
     </ClCompile>
+    <ClCompile Include="Camera\Camera.cpp">
+      <Filter>소스 파일\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="Texture\DDSTextureLoader.cpp">
+      <Filter>소스 파일\Texture</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Image Include="directx.ico">
@@ -111,18 +129,5 @@
     <ResourceCompile Include="Resource.rc">
       <Filter>리소스 파일</Filter>
     </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Shader\Lab03.fxh">
-      <Filter>리소스 파일\Shaders\Lab03</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <FxCompile Include="Shader\Lab03_PS.hlsl">
-      <Filter>리소스 파일\Shaders\Lab03</Filter>
-    </FxCompile>
-    <FxCompile Include="Shader\Lab03_VS.hlsl">
-      <Filter>리소스 파일\Shaders\Lab03</Filter>
-    </FxCompile>
   </ItemGroup>
 </Project>

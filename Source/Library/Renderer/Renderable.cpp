@@ -304,4 +304,28 @@ namespace library
     {
         return m_samplerLinear;
     }
+
+    /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+     Method:   Renderable::GetOutputColor
+     Summary:  Returns the output color
+     Returns:  const XMFLOAT4&
+                 The output color
+   M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
+
+    const XMFLOAT4& Renderable::GetOutputColor() const
+    {
+        return m_outputColor;
+    }
+
+   /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+     Method:   Renderable::HasTexture
+     Summary:  Returns whether the renderable has texture
+     Returns:  BOOL
+                 Whether the renderable has texture
+   M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
+
+    BOOL Renderable::HasTexture() const
+    {
+        return m_bHasTextures;
+    }
 }

@@ -376,6 +376,26 @@ namespace library
     }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+     Method:   Renderer::AddPointLight
+     Summary:  Add a point light
+     Args:     size_t index
+                 Index of the point light
+               const std::shared_ptr<PointLight>& pointLight
+                 Shared pointer to the point light object
+     Modifies: [m_aPointLights].
+     Returns:  HRESULT
+                 Status code.
+   M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
+   /*--------------------------------------------------------------------
+     TODO: Renderer::AddPointLight definition (remove the comment)
+   --------------------------------------------------------------------*/
+
+    HRESULT Renderer::AddPointLight(_In_ size_t index, _In_ const std::shared_ptr<PointLight>& pPointLight)
+    {
+
+    }
+
+    /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   Renderer::AddVertexShader
       Summary:  Add the vertex shader into the renderer
       Args:     PCWSTR pszVertexShaderName

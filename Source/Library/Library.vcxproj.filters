@@ -49,6 +49,12 @@
     <Filter Include="소스 파일\Texture">
       <UniqueIdentifier>{94fa134a-0fad-460e-9efa-14c1fc37f029}</UniqueIdentifier>
     </Filter>
+    <Filter Include="헤더 파일\Light">
+      <UniqueIdentifier>{8dbe2a15-27ac-4601-88d7-5ce1fc40a2b4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Light">
+      <UniqueIdentifier>{dc429773-57de-4f3e-85ea-43ea479026a9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common.h">
@@ -90,6 +96,9 @@
     <ClInclude Include="Texture\DDSTextureLoader.h">
       <Filter>헤더 파일\Texture</Filter>
     </ClInclude>
+    <ClInclude Include="..\Game\Light\RotatingPointLight.h">
+      <Filter>헤더 파일\Light</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Game\Game.cpp">
@@ -118,6 +127,9 @@
     </ClCompile>
     <ClCompile Include="Texture\DDSTextureLoader.cpp">
       <Filter>소스 파일\Texture</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Game\Light\RotatingPointLight.cpp">
+      <Filter>소스 파일\Light</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

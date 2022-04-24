@@ -8,9 +8,11 @@
             const XMFLOAT4& color
               Position of the color
 M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-/*--------------------------------------------------------------------
-  TODO: RotatingPointLight::RotatingPointLight definition (remove the comment)
---------------------------------------------------------------------*/
+
+RotatingPointLight::RotatingPointLight(_In_ const XMFLOAT4& position, _In_ const XMFLOAT4& color)
+    :PointLight(position, color)
+{
+}
 
 /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
   Method:   RotatingPointLight::Update

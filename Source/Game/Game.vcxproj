@@ -98,23 +98,26 @@
   <ItemGroup>
     <ClCompile Include="Cube\BaseCube.cpp" />
     <ClCompile Include="Cube\Cube.cpp" />
-    <ClCompile Include="Cube\CustomCube.cpp" />
+    <ClCompile Include="Cube\RotatingCube.cpp" />
     <ClCompile Include="Cube\OriginCube.cpp" />
     <ClCompile Include="Cube\YourCube.cpp" />
+    <ClCompile Include="Light\RotatingPointLight.cpp" />
     <ClCompile Include="Main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Cube\BaseCube.h" />
     <ClInclude Include="Cube\Cube.h" />
-    <ClInclude Include="Cube\CustomCube.h" />
+    <ClInclude Include="Cube\RotatingCube.h" />
     <ClInclude Include="Cube\OriginCube.h" />
     <ClInclude Include="Cube\YourCube.h" />
+    <ClInclude Include="Light\RotatingPointLight.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\PS.hlsl" />
     <FxCompile Include="Shaders\VS.hlsl" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Shaders\PhongShaders.fxh" />
     <None Include="Shaders\Shaders.fxh" />
   </ItemGroup>
   <ItemGroup>

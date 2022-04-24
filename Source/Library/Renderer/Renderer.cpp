@@ -26,10 +26,11 @@ namespace library
         m_depthStencil(nullptr),
         m_depthStencilView(nullptr),
         m_cbChangeOnResize(nullptr),
-        m_padding(),
+        m_cbLights(nullptr),
         m_camera(XMVECTOR()),
-        m_projection(XMMATRIX()),
+        m_projection(XMMatrixIdentity()),
         m_renderables(std::unordered_map<std::wstring, std::shared_ptr<Renderable>>()),
+        m_aPointLights{ std::shared_ptr<PointLight>() },
         m_vertexShaders(std::unordered_map<std::wstring, std::shared_ptr<VertexShader>>()),
         m_pixelShaders(std::unordered_map<std::wstring, std::shared_ptr<PixelShader>>())
     {
@@ -201,7 +202,7 @@ namespace library
         if (FAILED(hr))
             return hr;
 
-        m_immediateContext->OMSetRenderTargets(1, m_renderTargetView.GetAddressOf(), nullptr);
+        
 
         // Setup the viewport
         D3D11_VIEWPORT vp =
@@ -275,6 +276,8 @@ namespace library
             return hr;
         }
 
+        m_immediateContext->OMSetRenderTargets(1, m_renderTargetView.GetAddressOf(), m_depthStencilView.Get());
+
         // projection
         float fovAngleY = XM_PIDIV2;
         float aspectRatio = width / height;
@@ -284,18 +287,12 @@ namespace library
         m_projection = XMMatrixPerspectiveFovLH(fovAngleY, aspectRatio, nearZ, farZ);
 
         // Initializing Objects
-        m_camera.Initialize(m_d3dDevice.Get());
-
-        std::unordered_map<std::wstring, std::shared_ptr<Renderable>>::iterator it_renderables;
-
-        for (it_renderables = m_renderables.begin(); it_renderables != m_renderables.end(); it_renderables++)
+        hr = m_camera.Initialize(m_d3dDevice.Get());
+        if (FAILED(hr))
         {
-            hr = it_renderables->second->Initialize(m_d3dDevice.Get(), m_immediateContext.Get());
-            if (FAILED(hr))
-            {
-                return hr;
-            }
+            return hr;
         }
+            
 
         std::unordered_map<std::wstring, std::shared_ptr<VertexShader>>::iterator it_vertexShaders;
 
@@ -320,6 +317,16 @@ namespace library
             }
         }
 
+        std::unordered_map<std::wstring, std::shared_ptr<Renderable>>::iterator it_renderables;
+
+        for (it_renderables = m_renderables.begin(); it_renderables != m_renderables.end(); it_renderables++)
+        {
+            hr = it_renderables->second->Initialize(m_d3dDevice.Get(), m_immediateContext.Get());
+            if (FAILED(hr))
+            {
+                return hr;
+            }
+        }
 
         // create constant buffer
         D3D11_BUFFER_DESC constantBd = {
@@ -343,6 +350,21 @@ namespace library
         };
 
         m_immediateContext->UpdateSubresource(m_cbChangeOnResize.Get(), 0, nullptr, &cb_projection, 0, 0);
+
+        D3D11_BUFFER_DESC cbLights = {
+            .ByteWidth = sizeof(CBLights),
+            .Usage = D3D11_USAGE_DEFAULT,
+            .BindFlags = D3D11_BIND_CONSTANT_BUFFER,
+            .CPUAccessFlags = 0,
+            .MiscFlags = 0,
+            .StructureByteStride = 0
+        };
+
+        hr = m_d3dDevice->CreateBuffer(&cbLights, nullptr, m_cbLights.GetAddressOf());
+        if (FAILED(hr))
+        {
+            return hr;
+        }
 
         m_immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
@@ -386,13 +408,19 @@ namespace library
      Returns:  HRESULT
                  Status code.
    M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-   /*--------------------------------------------------------------------
-     TODO: Renderer::AddPointLight definition (remove the comment)
-   --------------------------------------------------------------------*/
 
     HRESULT Renderer::AddPointLight(_In_ size_t index, _In_ const std::shared_ptr<PointLight>& pPointLight)
     {
-
+       /* When the index exceeds the size of possible lights, it returns E_FAIL
+        else, add the light to designated index*/
+        if (index >= NUM_LIGHTS)
+        {
+            return E_FAIL;
+        }
+        m_aPointLights[index] = pPointLight;
+        
+        return S_OK;
+        
     }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
@@ -481,6 +509,13 @@ namespace library
         {
             it_renderables->second->Update(deltaTime);
         }
+
+        m_camera.Update(deltaTime);
+
+        for (int i = 0; i < NUM_LIGHTS; ++i)
+        {
+            m_aPointLights[i]->Update(deltaTime);
+        }
     }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
@@ -499,11 +534,25 @@ namespace library
 
         // Create camera constant buffer and update
         CBChangeOnCameraMovement cb_view = {
-               .View = XMMatrixTranspose(m_camera.GetView())
+               .View = XMMatrixTranspose(m_camera.GetView()),
         };
+
+        XMStoreFloat4(&cb_view.CameraPosition, m_camera.GetEye());
 
         m_immediateContext->UpdateSubresource(m_camera.GetConstantBuffer().Get(), 0, nullptr, &cb_view, 0, 0);
 
+        CBLights cbLight = {
+              .LightPositions = {},
+              .LightColors = {}
+        };
+
+        for (int i = 0; i < NUM_LIGHTS; i++)
+        {
+            cbLight.LightPositions[i] = m_aPointLights[i]->GetPosition();
+            cbLight.LightColors[i] = m_aPointLights[i]->GetColor();
+        }
+
+        m_immediateContext->UpdateSubresource(m_cbLights.Get(), 0, nullptr, &cbLight, 0, 0);
 
         std::unordered_map<std::wstring, std::shared_ptr<Renderable>>::iterator it_renderables;
 
@@ -543,10 +592,11 @@ namespace library
             // Create renderable constant buffer and update
             CBChangesEveryFrame cb_world =
             {
-                .World = XMMatrixTranspose(it_renderables->second->GetWorldMatrix())
+                .World = XMMatrixTranspose(it_renderables->second->GetWorldMatrix()),
+                .OutputColor = it_renderables->second->GetOutputColor()
             };
 
-            m_immediateContext->UpdateSubresource(it_renderables->second->GetConstantBuffer().Get(), 0, NULL, &cb_world, 0, 0);
+            m_immediateContext->UpdateSubresource(it_renderables->second->GetConstantBuffer().Get(), 0, nullptr, &cb_world, 0, 0);
 
 
             // Set shadersand constant buffers, shader resources, and samplers
@@ -582,19 +632,46 @@ namespace library
                 0u
             );
 
-            // Texture resource view of the renderable must be set into the pixel shader
-            m_immediateContext->PSSetShaderResources(
+            // PS set
+
+            m_immediateContext->PSSetConstantBuffers(
                 0,
                 1,
-                it_renderables->second->GetTextureResourceView().GetAddressOf()
+                m_camera.GetConstantBuffer().GetAddressOf()
             );
 
-            // Sampler state of the renderable must be set into the pixel shader
-            m_immediateContext->PSSetSamplers(
-                0,
+            m_immediateContext->PSSetConstantBuffers(
+                2,
                 1,
-                it_renderables->second->GetSamplerState().GetAddressOf()
+                it_renderables->second->GetConstantBuffer().GetAddressOf()
             );
+
+            m_immediateContext->PSSetConstantBuffers(
+                3,
+                1,
+                m_cbLights.GetAddressOf()
+            );
+            
+
+            if (it_renderables->second->HasTexture())
+            {
+                // Texture resource view of the renderable must be set into the pixel shader
+                m_immediateContext->PSSetShaderResources(
+                    0,
+                    1,
+                    it_renderables->second->GetTextureResourceView().GetAddressOf()
+                );
+
+                // Sampler state of the renderable must be set into the pixel shader
+                m_immediateContext->PSSetSamplers(
+                    0,
+                    1,
+                    it_renderables->second->GetSamplerState().GetAddressOf()
+                );
+            }
+
+            
+            
 
             // draw
             m_immediateContext->DrawIndexed(it_renderables->second->GetNumIndices(), 0, 0);

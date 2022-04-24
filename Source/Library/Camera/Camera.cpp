@@ -159,6 +159,8 @@ namespace library
         {
             return hr;
         }
+
+        return S_OK;
     }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M

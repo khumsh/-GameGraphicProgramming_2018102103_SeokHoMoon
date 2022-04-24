@@ -111,10 +111,10 @@ copy "$(TargetDir)" "$(SolutionDir)..\Library\x64\Release"</Command>
     </FxCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\Game\Light\RotatingPointLight.h" />
     <ClInclude Include="Camera\Camera.h" />
     <ClInclude Include="Common.h" />
     <ClInclude Include="Game\Game.h" />
+    <ClInclude Include="Light\PointLight.h" />
     <ClInclude Include="Renderer\DataTypes.h" />
     <ClInclude Include="Renderer\Renderable.h" />
     <ClInclude Include="Renderer\Renderer.h" />
@@ -127,9 +127,9 @@ copy "$(TargetDir)" "$(SolutionDir)..\Library\x64\Release"</Command>
     <ClInclude Include="Window\MainWindow.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\Game\Light\RotatingPointLight.cpp" />
     <ClCompile Include="Camera\Camera.cpp" />
     <ClCompile Include="Game\Game.cpp" />
+    <ClCompile Include="Light\PointLight.cpp" />
     <ClCompile Include="Renderer\Renderable.cpp" />
     <ClCompile Include="Renderer\Renderer.cpp" />
     <ClCompile Include="Shader\PixelShader.cpp" />

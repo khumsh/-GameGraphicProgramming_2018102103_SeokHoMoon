@@ -7,8 +7,13 @@
               Path to the texture to use
 M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 
-BaseCube::BaseCube(const std::filesystem::path& textureFilePath)
-    :Renderable(textureFilePath)
+BaseCube::BaseCube(_In_ const std::filesystem::path& textureFilePath)
+    : Renderable(textureFilePath)
+{
+}
+
+BaseCube::BaseCube(_In_ const XMFLOAT4& outputColor)
+    : Renderable(outputColor)
 {
 }
 

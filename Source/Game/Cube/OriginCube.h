@@ -25,7 +25,7 @@ C---C---C---C---C---C---C---C---C---C---C---C---C---C---C---C---C-C*/
 class OriginCube : public BaseCube
 {
 public:
-    OriginCube(const std::filesystem::path& textureFilePath);
+    OriginCube(_In_ const XMFLOAT4& outputColor);
     OriginCube(const OriginCube& other) = delete;
     OriginCube(OriginCube&& other) = delete;
     OriginCube& operator=(const OriginCube& other) = delete;

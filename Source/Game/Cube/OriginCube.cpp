@@ -6,8 +6,8 @@
   Args:     const std::filesystem::path& textureFilePath
               Path to the texture to use
 M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-OriginCube::OriginCube(const std::filesystem::path& textureFilePath)
-    :BaseCube(textureFilePath)
+OriginCube::OriginCube(_In_ const XMFLOAT4& outputColor)
+    :BaseCube(outputColor)
 {
 }
 

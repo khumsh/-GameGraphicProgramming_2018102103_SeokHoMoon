@@ -538,7 +538,7 @@ namespace library
         };
 
         XMStoreFloat4(&cb_view.CameraPosition, m_camera.GetEye());
-
+        
         m_immediateContext->UpdateSubresource(m_camera.GetConstantBuffer().Get(), 0, nullptr, &cb_view, 0, 0);
 
         CBLights cbLight = {
@@ -655,26 +655,33 @@ namespace library
 
             if (it_renderables->second->HasTexture())
             {
-                // Texture resource view of the renderable must be set into the pixel shader
-                m_immediateContext->PSSetShaderResources(
-                    0,
-                    1,
-                    it_renderables->second->GetTextureResourceView().GetAddressOf()
-                );
+                for (UINT i = 0u; i < it_renderables->second->GetNumMeshes(); ++i)
+                {
+                    const UINT materialIndex = it_renderables->second->GetMesh(i).uMaterialIndex;
+                    if (it_renderables->second->GetMaterial(materialIndex).pDiffuse)
+                    {
+                        // Set texture resource view of the renderable into the pixel shader
+                        m_immediateContext->PSSetShaderResources(0u, 1u, it_renderables->second->GetMaterial(materialIndex).pDiffuse->GetTextureResourceView().GetAddressOf());
 
-                // Sampler state of the renderable must be set into the pixel shader
-                m_immediateContext->PSSetSamplers(
-                    0,
-                    1,
-                    it_renderables->second->GetSamplerState().GetAddressOf()
-                );
+                        // Set sampler state of the renderable into the pixel shader
+                        m_immediateContext->PSSetSamplers(0u, 1u, it_renderables->second->GetMaterial(materialIndex).pDiffuse->GetSamplerState().GetAddressOf());
+                    }
+
+                    // Render the triangles
+                    m_immediateContext->DrawIndexed(it_renderables->second->GetMesh(i).uNumIndices,
+                        it_renderables->second->GetMesh(i).uBaseIndex,
+                        it_renderables->second->GetMesh(i).uBaseVertex);
+                }
             }
-
+            else
+            {
+                // draw
+                m_immediateContext->DrawIndexed(it_renderables->second->GetNumIndices(), 0, 0);
+            }
             
             
 
-            // draw
-            m_immediateContext->DrawIndexed(it_renderables->second->GetNumIndices(), 0, 0);
+            
 
         }
 

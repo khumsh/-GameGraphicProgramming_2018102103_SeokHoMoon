@@ -42,6 +42,8 @@
 
 #include "Resource.h"
 
+#define NUM_LIGHTS (2)
+
 constexpr LPCWSTR PSZ_COURSE_TITLE = L"Game Graphics Programming";
 
 using namespace Microsoft::WRL;

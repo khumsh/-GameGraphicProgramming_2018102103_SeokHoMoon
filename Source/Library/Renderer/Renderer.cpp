@@ -32,7 +32,8 @@ namespace library
         m_renderables(std::unordered_map<std::wstring, std::shared_ptr<Renderable>>()),
         m_aPointLights{ std::shared_ptr<PointLight>() },
         m_vertexShaders(std::unordered_map<std::wstring, std::shared_ptr<VertexShader>>()),
-        m_pixelShaders(std::unordered_map<std::wstring, std::shared_ptr<PixelShader>>())
+        m_pixelShaders(std::unordered_map<std::wstring, std::shared_ptr<PixelShader>>()),
+        m_pszMainSceneName()
     {
     }
 
@@ -328,6 +329,17 @@ namespace library
             }
         }
 
+        std::unordered_map<std::wstring, std::shared_ptr<Scene>>::iterator it_scenes;
+
+        for (it_scenes = m_scenes.begin(); it_scenes != m_scenes.end(); it_scenes++)
+        {
+            hr = it_scenes->second->Initialize(m_d3dDevice.Get(), m_immediateContext.Get());
+            if (FAILED(hr))
+            {
+                return hr;
+            }
+        }
+
         // create constant buffer
         D3D11_BUFFER_DESC constantBd = {
             .ByteWidth = sizeof(CBChangeOnResize),
@@ -486,9 +498,16 @@ namespace library
       Returns:  HRESULT
                   Status code
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: Renderer::AddScene definition (remove the comment)
-    --------------------------------------------------------------------*/
+
+    HRESULT Renderer::AddScene(_In_ PCWSTR pszSceneName, const std::filesystem::path& sceneFilePath)
+    {
+        if (m_scenes.count(pszSceneName) > 0)
+            return E_FAIL;
+
+        m_scenes.insert(std::make_pair(pszSceneName, std::make_shared<Scene>(sceneFilePath)));
+
+        return S_OK;
+    }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   Renderer::SetMainScene
@@ -499,9 +518,16 @@ namespace library
       Returns:  HRESULT
                   Status code
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: Renderer::SetMainScene definition (remove the comment)
-    --------------------------------------------------------------------*/
+
+    HRESULT Renderer::SetMainScene(_In_ PCWSTR pszSceneName)
+    {
+        if (m_pszMainSceneName == pszSceneName)
+            return E_FAIL;
+
+        m_pszMainSceneName = pszSceneName;
+
+        return S_OK;
+    }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   Renderer::HandleInput
@@ -713,6 +739,146 @@ namespace library
 
         }
 
+        // for voxels
+        std::vector<std::shared_ptr<Voxel>>::iterator it_voxels;
+
+        for (it_voxels = m_scenes.find(m_pszMainSceneName)->second->GetVoxels().begin(); it_voxels != m_scenes.find(m_pszMainSceneName)->second->GetVoxels().end(); it_voxels++)
+        {
+            // Set the vertex buffer, index buffer, and the input layout
+
+            // Set vertex buffer
+            UINT uStride = sizeof(SimpleVertex);
+            UINT uOffset = 0;
+
+            m_immediateContext->IASetVertexBuffers(
+                0u,             // the first input slot for binding
+                1u,             // the number of buffers in the array
+                it_voxels->get()->GetVertexBuffer().GetAddressOf(), // the array of vertex buffers
+                &uStride,       // array of stride values, one for each buffer
+                &uOffset        // array of offset values, one for each buffer
+            );
+
+            uStride = sizeof(InstanceData);
+            m_immediateContext->IASetVertexBuffers(
+                1u, 
+                1u, 
+                it_voxels->get()->GetInstanceBuffer().GetAddressOf(),
+                &uStride,
+                &uOffset
+            );
+
+            // Set index buffer
+            m_immediateContext->IASetIndexBuffer(
+                it_voxels->get()->GetIndexBuffer().Get(),
+                DXGI_FORMAT_R16_UINT,
+                0
+            );
+
+            // Set input layout
+            m_immediateContext->IASetInputLayout(it_voxels->get()->GetVertexLayout().Get());
+
+
+
+            // Update constant buffer
+            //   You must transpose the matrices when passing them to GPU!!
+            //   XMMATRIX is a row - major matrix, however HLSL expects column - major matrix
+
+            // Create renderable constant buffer and update
+            CBChangesEveryFrame cb_world =
+            {
+                .World = XMMatrixTranspose(it_voxels->get()->GetWorldMatrix()),
+                .OutputColor = it_voxels->get()->GetOutputColor()
+            };
+
+            m_immediateContext->UpdateSubresource(it_voxels->get()->GetConstantBuffer().Get(), 0, nullptr, &cb_world, 0, 0);
+
+
+            // Set shadersand constant buffers, shader resources, and samplers
+
+            // Set vertex shader
+            m_immediateContext->VSSetShader(
+                it_voxels->get()->GetVertexShader().Get(),
+                nullptr,
+                0u
+            );
+
+            // VS set
+            m_immediateContext->VSSetConstantBuffers(
+                0,
+                1,
+                m_camera.GetConstantBuffer().GetAddressOf()
+            );
+            m_immediateContext->VSSetConstantBuffers(
+                1,
+                1,
+                m_cbChangeOnResize.GetAddressOf()
+            );
+            m_immediateContext->VSSetConstantBuffers(
+                2,
+                1,
+                it_voxels->get()->GetConstantBuffer().GetAddressOf()
+            );
+
+            // Set pixel shader
+            m_immediateContext->PSSetShader(
+                it_voxels->get()->GetPixelShader().Get(),
+                nullptr,
+                0u
+            );
+
+            // PS set
+
+            m_immediateContext->PSSetConstantBuffers(
+                0,
+                1,
+                m_camera.GetConstantBuffer().GetAddressOf()
+            );
+
+            m_immediateContext->PSSetConstantBuffers(
+                2,
+                1,
+                it_voxels->get()->GetConstantBuffer().GetAddressOf()
+            );
+
+            m_immediateContext->PSSetConstantBuffers(
+                3,
+                1,
+                m_cbLights.GetAddressOf()
+            );
+
+
+            if (it_voxels->get()->HasTexture())
+            {
+                for (UINT i = 0u; i < it_voxels->get()->GetNumMeshes(); ++i)
+                {
+                    const UINT materialIndex = it_voxels->get()->GetMesh(i).uMaterialIndex;
+                    if (it_voxels->get()->GetMaterial(materialIndex).pDiffuse)
+                    {
+                        // Set texture resource view of the renderable into the pixel shader
+                        m_immediateContext->PSSetShaderResources(0u, 1u, it_voxels->get()->GetMaterial(materialIndex).pDiffuse->GetTextureResourceView().GetAddressOf());
+
+                        // Set sampler state of the renderable into the pixel shader
+                        m_immediateContext->PSSetSamplers(0u, 1u, it_voxels->get()->GetMaterial(materialIndex).pDiffuse->GetSamplerState().GetAddressOf());
+                    }
+
+                    // Render the triangles
+                    m_immediateContext->DrawIndexed(it_voxels->get()->GetMesh(i).uNumIndices,
+                        it_voxels->get()->GetMesh(i).uBaseIndex,
+                        it_voxels->get()->GetMesh(i).uBaseVertex);
+                }
+            }
+            else
+            {
+                // draw
+                m_immediateContext->DrawIndexedInstanced(it_voxels->get()->GetNumIndices(), it_voxels->get()->GetNumInstances(), 0, 0, 0);
+            }
+
+
+
+
+
+        }
+
 
         m_swapChain->Present(0, 0);
     }
@@ -790,9 +956,29 @@ namespace library
       Returns:  HRESULT
                   Status code
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: Renderer::SetVertexShaderOfScene definition (remove the comment)
-    --------------------------------------------------------------------*/
+
+    HRESULT Renderer::SetVertexShaderOfScene(_In_ PCWSTR pszSceneName, _In_ PCWSTR pszVertexShaderName)
+    {
+        if (!m_scenes.contains(pszSceneName))
+        {
+            return E_FAIL;
+        }
+        else
+        {
+            if (m_vertexShaders.contains(pszVertexShaderName))
+            {
+                for (UINT i = 0u; i < m_scenes.find(pszSceneName)->second->GetVoxels().size(); ++i)
+                {
+                    m_scenes.find(pszSceneName)->second->GetVoxels()[i]->SetVertexShader(m_vertexShaders[pszVertexShaderName]);
+                }
+                return S_OK;
+            }
+
+            return E_FAIL;
+
+        }
+
+    }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   Renderer::SetPixelShaderOfScene
@@ -805,9 +991,28 @@ namespace library
       Returns:  HRESULT
                   Status code
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: Renderer::SetPixelShaderOfScene definition (remove the comment)
-    --------------------------------------------------------------------*/
+
+    HRESULT Renderer::SetPixelShaderOfScene(_In_ PCWSTR pszSceneName, _In_ PCWSTR pszPixelShaderName)
+    {
+        if (!m_scenes.contains(pszSceneName))
+        {
+            return E_FAIL;
+        }
+        else
+        {
+            if (m_pixelShaders.contains(pszPixelShaderName))
+            {
+                for (UINT i = 0u; i < m_scenes.find(pszSceneName)->second->GetVoxels().size(); ++i)
+                {
+                    m_scenes.find(pszSceneName)->second->GetVoxels()[i]->SetPixelShader(m_pixelShaders[pszPixelShaderName]);
+                }
+                return S_OK;
+            }
+
+            return E_FAIL;
+
+        }
+    }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   Renderer::GetDriverType

@@ -10,9 +10,11 @@ namespace library
       Args:     const XMFLOAT4& outputColor
                   Color of the voxel
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: Voxel::Voxel definition (remove the comment)
-    --------------------------------------------------------------------*/
+
+    Voxel::Voxel(_In_ const XMFLOAT4& outputColor)
+        :InstancedRenderable(outputColor)
+    {
+    }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   Voxel::Voxel
@@ -22,9 +24,11 @@ namespace library
                 const XMFLOAT4& outputColor
                   Color of the voxel
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: Voxel::Voxel definition (remove the comment)
-    --------------------------------------------------------------------*/
+
+    Voxel::Voxel(_In_ std::vector<InstanceData>&& aInstanceData, _In_ const XMFLOAT4& outputColor)
+        :InstancedRenderable(std::move(aInstanceData), outputColor)
+    {
+    }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   Voxel::Initialize
@@ -36,9 +40,21 @@ namespace library
       Returns:  HRESULT
                   Status code
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: Voxel::Initialize definition (remove the comment)
-    --------------------------------------------------------------------*/
+
+    HRESULT Voxel::Initialize(_In_ ID3D11Device* pDevice, _In_ ID3D11DeviceContext* pImmediateContext)
+    {
+        HRESULT hr = S_OK;
+
+        hr = initialize(pDevice, pImmediateContext);
+        if (FAILED(hr))
+            return hr;
+
+        hr = initializeInstance(pDevice);
+        if (FAILED(hr))
+            return hr;
+
+        return hr;
+    }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   Voxel::Update
@@ -46,9 +62,10 @@ namespace library
       Args:     FLOAT deltaTime
                   Elapsed time
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: Voxel::Update definition (remove the comment)
-    --------------------------------------------------------------------*/
+
+    void Voxel::Update(_In_ FLOAT deltaTime)
+    {
+    }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   Voxel::GetNumVertices
@@ -57,9 +74,11 @@ namespace library
       Returns:  UINT
                   Number of vertices
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: Voxel::GetNumVertices definition (remove the comment)
-    --------------------------------------------------------------------*/
+
+    UINT Voxel::GetNumVertices() const
+    {
+        return NUM_VERTICES;
+    }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   Voxel::GetNumIndices
@@ -68,9 +87,11 @@ namespace library
       Returns:  UINT
                   Number of indices
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: Voxel::GetNumIndices definition (remove the comment)
-    --------------------------------------------------------------------*/
+
+    UINT Voxel::GetNumIndices() const
+    {
+        return NUM_INDICES;
+    }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   Voxel::getVertices
@@ -79,9 +100,11 @@ namespace library
       Returns:  const library::SimpleVertex*
                   Pointer to the vertices data
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: Voxel::getVertices definition (remove the comment)
-    --------------------------------------------------------------------*/
+
+    const SimpleVertex* Voxel::getVertices() const
+    {
+        return VERTICES;
+    }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   Voxel::getIndices
@@ -90,7 +113,10 @@ namespace library
       Returns:  const WORD*
                   Pointer to the indices data
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: Voxel::getIndices definition (remove the comment)
-    --------------------------------------------------------------------*/
+
+    const WORD* Voxel::getIndices() const
+    {
+        return INDICES;
+    }
+
 }

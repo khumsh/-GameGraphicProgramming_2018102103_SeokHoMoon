@@ -14,6 +14,9 @@
 
 #include "Game/Game.h"
 #include "Scene/Voxel.h"
+#include "Cube/Cube.h"
+#include "Cube/RotatingCube.h"
+#include "Light/RotatingPointLight.h"
 
 /*F+F+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   Function: wWinMain

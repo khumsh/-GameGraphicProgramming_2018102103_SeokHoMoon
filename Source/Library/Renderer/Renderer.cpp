@@ -384,6 +384,22 @@ namespace library
     }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+      Method:   Renderer::AddModel
+      Summary:  Add a model object
+      Args:     PCWSTR pszModelName
+                  Key of the model object
+                const std::shared_ptr<Model>& pModel
+                  Shared pointer to the model object
+      Modifies: [m_models].
+      Returns:  HRESULT
+                  Status code.
+    M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
+    /*--------------------------------------------------------------------
+      TODO: Renderer::AddModel definition (remove the comment)
+    --------------------------------------------------------------------*/
+
+
+    /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   Renderer::AddRenderable
       Summary:  Add a renderable object and initialize the object
       Args:     PCWSTR pszRenderableName
@@ -547,6 +563,7 @@ namespace library
             deltaTime
         );
     }
+
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   Renderer::Update
@@ -884,6 +901,37 @@ namespace library
     }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+      Method:   Renderer::SetVertexShaderOfModel
+      Summary:  Sets the pixel shader for a model
+      Args:     PCWSTR pszModelName
+                  Key of the model
+                PCWSTR pszVertexShaderName
+                  Key of the vertex shader
+      Modifies: [m_renderables].
+      Returns:  HRESULT
+                  Status code
+    M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
+    /*--------------------------------------------------------------------
+      TODO: Renderer::SetVertexShaderOfModel definition (remove the comment)
+    --------------------------------------------------------------------*/
+
+    /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+      Method:   Renderer::SetPixelShaderOfModel
+      Summary:  Sets the pixel shader for a model
+      Args:     PCWSTR pszModelName
+                  Key of the model
+                PCWSTR pszPixelShaderName
+                  Key of the pixel shader
+      Modifies: [m_renderables].
+      Returns:  HRESULT
+                  Status code
+    M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
+    /*--------------------------------------------------------------------
+      TODO: Renderer::SetPixelShaderOfModel definition (remove the comment)
+    --------------------------------------------------------------------*/
+
+
+    /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   Renderer::SetVertexShaderOfRenderable
       Summary:  Sets the vertex shader for a renderable
       Args:     PCWSTR pszRenderableName
@@ -1025,4 +1073,5 @@ namespace library
     {
         return m_driverType;
     }
+
 }

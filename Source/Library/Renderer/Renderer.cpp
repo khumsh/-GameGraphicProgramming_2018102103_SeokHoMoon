@@ -29,11 +29,13 @@ namespace library
         m_cbLights(nullptr),
         m_camera(XMVECTOR()),
         m_projection(XMMatrixIdentity()),
-        m_renderables(std::unordered_map<std::wstring, std::shared_ptr<Renderable>>()),
+        m_renderables(std::unordered_map<PCWSTR, std::shared_ptr<Renderable>>()),
         m_aPointLights{ std::shared_ptr<PointLight>() },
-        m_vertexShaders(std::unordered_map<std::wstring, std::shared_ptr<VertexShader>>()),
-        m_pixelShaders(std::unordered_map<std::wstring, std::shared_ptr<PixelShader>>()),
-        m_pszMainSceneName()
+        m_vertexShaders(std::unordered_map<PCWSTR, std::shared_ptr<VertexShader>>()),
+        m_pixelShaders(std::unordered_map<PCWSTR, std::shared_ptr<PixelShader>>()),
+        m_pszMainSceneName(PCWSTR()),
+        m_models(std::unordered_map<PCWSTR, std::shared_ptr<Model>>()),
+        m_scenes(std::unordered_map < std::wstring, std::shared_ptr<Scene>>())
     {
     }
 
@@ -295,7 +297,7 @@ namespace library
         }
             
 
-        std::unordered_map<std::wstring, std::shared_ptr<VertexShader>>::iterator it_vertexShaders;
+        std::unordered_map<PCWSTR, std::shared_ptr<VertexShader>>::iterator it_vertexShaders;
 
         for (it_vertexShaders = m_vertexShaders.begin(); it_vertexShaders != m_vertexShaders.end(); it_vertexShaders++)
         {
@@ -307,7 +309,7 @@ namespace library
         }
 
 
-        std::unordered_map<std::wstring, std::shared_ptr<PixelShader>>::iterator it_pixelShaders;
+        std::unordered_map<PCWSTR, std::shared_ptr<PixelShader>>::iterator it_pixelShaders;
 
         for (it_pixelShaders = m_pixelShaders.begin(); it_pixelShaders != m_pixelShaders.end(); it_pixelShaders++)
         {
@@ -318,7 +320,7 @@ namespace library
             }
         }
 
-        std::unordered_map<std::wstring, std::shared_ptr<Renderable>>::iterator it_renderables;
+        std::unordered_map<PCWSTR, std::shared_ptr<Renderable>>::iterator it_renderables;
 
         for (it_renderables = m_renderables.begin(); it_renderables != m_renderables.end(); it_renderables++)
         {
@@ -334,6 +336,17 @@ namespace library
         for (it_scenes = m_scenes.begin(); it_scenes != m_scenes.end(); it_scenes++)
         {
             hr = it_scenes->second->Initialize(m_d3dDevice.Get(), m_immediateContext.Get());
+            if (FAILED(hr))
+            {
+                return hr;
+            }
+        }
+
+        std::unordered_map<PCWSTR, std::shared_ptr<Model>>::iterator it_models;
+
+        for (it_models = m_models.begin(); it_models != m_models.end(); it_models++)
+        {
+            hr = it_models->second->Initialize(m_d3dDevice.Get(), m_immediateContext.Get());
             if (FAILED(hr))
             {
                 return hr;
@@ -394,9 +407,20 @@ namespace library
       Returns:  HRESULT
                   Status code.
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: Renderer::AddModel definition (remove the comment)
-    --------------------------------------------------------------------*/
+
+    HRESULT Renderer::AddModel(_In_ PCWSTR pszModelName, _In_ const std::shared_ptr<Model>& pModel)
+    {
+        if (m_models.contains(pszModelName))
+        {
+            return E_FAIL;
+        }
+        else
+        {
+            m_models.insert(std::make_pair(pszModelName, pModel));
+
+            return S_OK;
+        }        
+    }
 
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
@@ -574,7 +598,7 @@ namespace library
     
     void Renderer::Update(_In_ FLOAT deltaTime)
     {
-        std::unordered_map<std::wstring, std::shared_ptr<Renderable>>::iterator it_renderables;
+        std::unordered_map<PCWSTR, std::shared_ptr<Renderable>>::iterator it_renderables;
 
         for (it_renderables = m_renderables.begin(); it_renderables != m_renderables.end(); it_renderables++)
         {
@@ -586,6 +610,13 @@ namespace library
         for (int i = 0; i < NUM_LIGHTS; ++i)
         {
             m_aPointLights[i]->Update(deltaTime);
+        }
+
+        std::unordered_map<PCWSTR, std::shared_ptr<Model>>::iterator it_models;
+
+        for (it_models = m_models.begin(); it_models != m_models.end(); it_models++)
+        {
+            it_models->second->Update(deltaTime);
         }
     }
 
@@ -625,7 +656,7 @@ namespace library
 
         m_immediateContext->UpdateSubresource(m_cbLights.Get(), 0, nullptr, &cbLight, 0, 0);
 
-        std::unordered_map<std::wstring, std::shared_ptr<Renderable>>::iterator it_renderables;
+        std::unordered_map<PCWSTR, std::shared_ptr<Renderable>>::iterator it_renderables;
 
         // for each renderables
         for (it_renderables = m_renderables.begin(); it_renderables != m_renderables.end(); it_renderables++)
@@ -756,43 +787,107 @@ namespace library
 
         }
 
-        // for voxels
-        std::vector<std::shared_ptr<Voxel>>::iterator it_voxels;
+        for (auto it_scenes = m_scenes.begin(); it_scenes != m_scenes.end(); it_scenes++)
+        {
+            std::vector<std::shared_ptr<Voxel>> voxels = it_scenes->second->GetVoxels();
+            for (UINT i = 0u; i < voxels.size(); i++)
+            {
+                UINT strides[2] = { sizeof(SimpleVertex), sizeof(InstanceData) };
+                UINT offsets[2] = { 0, 0 };
 
-        for (it_voxels = m_scenes.find(m_pszMainSceneName)->second->GetVoxels().begin(); it_voxels != m_scenes.find(m_pszMainSceneName)->second->GetVoxels().end(); it_voxels++)
+                ComPtr<ID3D11Buffer> vertexInstanceBuffers[2] = { voxels[i]->GetVertexBuffer(), voxels[i]->GetInstanceBuffer() };
+
+                m_immediateContext->IASetVertexBuffers(
+                    0,
+                    2,
+                    vertexInstanceBuffers->GetAddressOf(),
+                    strides, 
+                    offsets);
+                m_immediateContext->IASetIndexBuffer(
+                    voxels[i]->GetIndexBuffer().Get(),
+                    DXGI_FORMAT_R16_UINT,
+                    0
+                );
+                m_immediateContext->IASetInputLayout(
+                    voxels[i]->GetVertexLayout().Get()
+                );
+
+                CBChangesEveryFrame cb = {
+                    .World = XMMatrixTranspose(voxels[i]->GetWorldMatrix()),
+                    .OutputColor = voxels[i]->GetOutputColor()
+                };
+
+                m_immediateContext->UpdateSubresource(
+                    voxels[i]->GetConstantBuffer().Get(),
+                    0,
+                    nullptr,
+                    &cb,
+                    0,
+                    0
+                );
+                m_immediateContext->VSSetShader(
+                    voxels[i]->GetVertexShader().Get(),
+                    nullptr,
+                    0
+                );
+
+
+                m_immediateContext->VSSetConstantBuffers(0, 1, m_camera.GetConstantBuffer().GetAddressOf());
+                m_immediateContext->VSSetConstantBuffers(1, 1, m_cbChangeOnResize.GetAddressOf());
+                m_immediateContext->VSSetConstantBuffers(2, 1, voxels[i]->GetConstantBuffer().GetAddressOf());
+
+                m_immediateContext->PSSetConstantBuffers(0, 1, m_camera.GetConstantBuffer().GetAddressOf());
+                m_immediateContext->PSSetConstantBuffers(2, 1, voxels[i]->GetConstantBuffer().GetAddressOf());
+                m_immediateContext->PSSetConstantBuffers(3, 1, m_cbLights.GetAddressOf());
+
+                m_immediateContext->PSSetShader(voxels[i]->GetPixelShader().Get(), nullptr, 0);
+
+
+                m_immediateContext->DrawIndexedInstanced(voxels[i]->GetNumIndices(), voxels[i]->GetNumInstances(), 0, 0, 0);
+
+            }
+        }
+
+
+
+
+        std::unordered_map<PCWSTR, std::shared_ptr<Model>>::iterator it_models;
+
+        // for models
+        for (it_models = m_models.begin(); it_models != m_models.end(); it_models++)
         {
             // Set the vertex buffer, index buffer, and the input layout
 
             // Set vertex buffer
-            UINT uStride = sizeof(SimpleVertex);
-            UINT uOffset = 0;
+            UINT aStrides[2] = {
+                static_cast<UINT>(sizeof(SimpleVertex)),
+                static_cast<UINT>(sizeof(AnimationData)),
+            };
+            UINT aOffsets[2] = { 0u, 0u };
+
+            ComPtr<ID3D11Buffer> aBuffers[2]
+            {
+                it_models->second->GetVertexBuffer().Get(),
+                it_models->second->GetAnimationBuffer().Get(),
+            };
 
             m_immediateContext->IASetVertexBuffers(
                 0u,             // the first input slot for binding
-                1u,             // the number of buffers in the array
-                it_voxels->get()->GetVertexBuffer().GetAddressOf(), // the array of vertex buffers
-                &uStride,       // array of stride values, one for each buffer
-                &uOffset        // array of offset values, one for each buffer
-            );
-
-            uStride = sizeof(InstanceData);
-            m_immediateContext->IASetVertexBuffers(
-                1u, 
-                1u, 
-                it_voxels->get()->GetInstanceBuffer().GetAddressOf(),
-                &uStride,
-                &uOffset
+                2u,             // the number of buffers in the array
+                aBuffers->GetAddressOf(), // the array of vertex buffers
+                aStrides,       // array of stride values, one for each buffer
+                aOffsets        // array of offset values, one for each buffer
             );
 
             // Set index buffer
             m_immediateContext->IASetIndexBuffer(
-                it_voxels->get()->GetIndexBuffer().Get(),
+                it_models->second->GetIndexBuffer().Get(),
                 DXGI_FORMAT_R16_UINT,
                 0
             );
 
             // Set input layout
-            m_immediateContext->IASetInputLayout(it_voxels->get()->GetVertexLayout().Get());
+            m_immediateContext->IASetInputLayout(it_models->second->GetVertexLayout().Get());
 
 
 
@@ -803,20 +898,31 @@ namespace library
             // Create renderable constant buffer and update
             CBChangesEveryFrame cb_world =
             {
-                .World = XMMatrixTranspose(it_voxels->get()->GetWorldMatrix()),
-                .OutputColor = it_voxels->get()->GetOutputColor()
+                .World = XMMatrixTranspose(it_models->second->GetWorldMatrix()),
+                .OutputColor = it_models->second->GetOutputColor()
             };
 
-            m_immediateContext->UpdateSubresource(it_voxels->get()->GetConstantBuffer().Get(), 0, nullptr, &cb_world, 0, 0);
+            m_immediateContext->UpdateSubresource(it_models->second->GetConstantBuffer().Get(), 0, nullptr, &cb_world, 0, 0);
 
+            CBSkinning cb_skinning =
+            {
+                .BoneTransforms = {}
+            };
+
+            for (UINT i = 0u; i < it_models->second->GetBoneTransforms().size(); i++)
+            {
+                cb_skinning.BoneTransforms[i] = XMMatrixTranspose(it_models->second->GetBoneTransforms()[i]);
+            }
+
+            m_immediateContext->UpdateSubresource(it_models->second->GetSkinningConstantBuffer().Get(), 0, nullptr, &cb_skinning, 0, 0);
 
             // Set shadersand constant buffers, shader resources, and samplers
 
             // Set vertex shader
             m_immediateContext->VSSetShader(
-                it_voxels->get()->GetVertexShader().Get(),
+                it_models->second->GetVertexShader().Get(),
                 nullptr,
-                0u
+                0
             );
 
             // VS set
@@ -833,12 +939,17 @@ namespace library
             m_immediateContext->VSSetConstantBuffers(
                 2,
                 1,
-                it_voxels->get()->GetConstantBuffer().GetAddressOf()
+                it_models->second->GetConstantBuffer().GetAddressOf()
+            );
+            m_immediateContext->VSSetConstantBuffers(
+                4,
+                1,
+                it_models->second->GetSkinningConstantBuffer().GetAddressOf()
             );
 
             // Set pixel shader
             m_immediateContext->PSSetShader(
-                it_voxels->get()->GetPixelShader().Get(),
+                it_models->second->GetPixelShader().Get(),
                 nullptr,
                 0u
             );
@@ -854,7 +965,7 @@ namespace library
             m_immediateContext->PSSetConstantBuffers(
                 2,
                 1,
-                it_voxels->get()->GetConstantBuffer().GetAddressOf()
+                it_models->second->GetConstantBuffer().GetAddressOf()
             );
 
             m_immediateContext->PSSetConstantBuffers(
@@ -864,30 +975,29 @@ namespace library
             );
 
 
-            if (it_voxels->get()->HasTexture())
+            if (it_models->second->HasTexture())
             {
-                for (UINT i = 0u; i < it_voxels->get()->GetNumMeshes(); ++i)
+                for (UINT i = 0u; i < it_models->second->GetNumMeshes(); ++i)
                 {
-                    const UINT materialIndex = it_voxels->get()->GetMesh(i).uMaterialIndex;
-                    if (it_voxels->get()->GetMaterial(materialIndex).pDiffuse)
-                    {
-                        // Set texture resource view of the renderable into the pixel shader
-                        m_immediateContext->PSSetShaderResources(0u, 1u, it_voxels->get()->GetMaterial(materialIndex).pDiffuse->GetTextureResourceView().GetAddressOf());
+                    const UINT materialIndex = it_models->second->GetMesh(i).uMaterialIndex;
 
-                        // Set sampler state of the renderable into the pixel shader
-                        m_immediateContext->PSSetSamplers(0u, 1u, it_voxels->get()->GetMaterial(materialIndex).pDiffuse->GetSamplerState().GetAddressOf());
-                    }
+                    // Set texture resource view of the renderable into the pixel shader
+                    m_immediateContext->PSSetShaderResources(0u, 1u, it_models->second->GetMaterial(materialIndex).pDiffuse->GetTextureResourceView().GetAddressOf());
+
+                    // Set sampler state of the renderable into the pixel shader
+                    m_immediateContext->PSSetSamplers(0u, 1u, it_models->second->GetMaterial(materialIndex).pDiffuse->GetSamplerState().GetAddressOf());
+                    
 
                     // Render the triangles
-                    m_immediateContext->DrawIndexed(it_voxels->get()->GetMesh(i).uNumIndices,
-                        it_voxels->get()->GetMesh(i).uBaseIndex,
-                        it_voxels->get()->GetMesh(i).uBaseVertex);
+                    m_immediateContext->DrawIndexed(it_models->second->GetMesh(i).uNumIndices,
+                        it_models->second->GetMesh(i).uBaseIndex,
+                        it_models->second->GetMesh(i).uBaseVertex);
                 }
             }
             else
             {
                 // draw
-                m_immediateContext->DrawIndexedInstanced(it_voxels->get()->GetNumIndices(), it_voxels->get()->GetNumInstances(), 0, 0, 0);
+                m_immediateContext->DrawIndexed(it_models->second->GetNumIndices(), 0, 0);
             }
 
 
@@ -896,13 +1006,15 @@ namespace library
 
         }
 
+        
+
 
         m_swapChain->Present(0, 0);
     }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   Renderer::SetVertexShaderOfModel
-      Summary:  Sets the pixel shader for a model
+      Summary:  Sets the vertex shader for a model
       Args:     PCWSTR pszModelName
                   Key of the model
                 PCWSTR pszVertexShaderName
@@ -911,9 +1023,24 @@ namespace library
       Returns:  HRESULT
                   Status code
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: Renderer::SetVertexShaderOfModel definition (remove the comment)
-    --------------------------------------------------------------------*/
+    HRESULT Renderer::SetVertexShaderOfModel(_In_ PCWSTR pszModelName, _In_ PCWSTR pszVertexShaderName)
+    {
+        if (!m_models.contains(pszModelName))
+        {
+            return E_FAIL;
+        }
+        else
+        {
+            if (m_vertexShaders.contains(pszVertexShaderName))
+            {
+                m_models.find(pszModelName)->second->SetVertexShader(m_vertexShaders.find(pszVertexShaderName)->second);
+                return S_OK;
+            }
+
+            return E_FAIL;
+
+        }
+    }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   Renderer::SetPixelShaderOfModel
@@ -926,9 +1053,25 @@ namespace library
       Returns:  HRESULT
                   Status code
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: Renderer::SetPixelShaderOfModel definition (remove the comment)
-    --------------------------------------------------------------------*/
+
+    HRESULT Renderer::SetPixelShaderOfModel(_In_ PCWSTR pszModelName, _In_ PCWSTR pszPixelShaderName)
+    {
+        if (!m_models.contains(pszModelName))
+        {
+            return E_FAIL;
+        }
+        else
+        {
+            if (m_pixelShaders.contains(pszPixelShaderName))
+            {
+                m_models.find(pszModelName)->second->SetPixelShader(m_pixelShaders.find(pszPixelShaderName)->second);
+                return S_OK;
+            }
+
+            return E_FAIL;
+
+        }
+    }
 
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
@@ -982,7 +1125,7 @@ namespace library
         }
         else
         {
-            if (m_vertexShaders.contains(pszPixelShaderName))
+            if (m_pixelShaders.contains(pszPixelShaderName))
             {
                 m_renderables.find(pszRenderableName)->second->SetPixelShader(m_pixelShaders.find(pszPixelShaderName)->second);
                 return S_OK;

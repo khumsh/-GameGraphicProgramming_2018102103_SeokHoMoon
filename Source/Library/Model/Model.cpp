@@ -67,15 +67,22 @@ namespace library
                  m_aBoneInfo, m_aTransforms, m_boneNameToIndexMap,
                  m_pScene, m_timeSinceLoaded, m_globalInverseTransform].
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: Model::Model definition (remove the comment)
-    --------------------------------------------------------------------*/
 
     Model::Model(_In_ const std::filesystem::path& filePath)
         :Renderable(XMFLOAT4(1.0, 1.0, 1.0, 1.0)),
         m_filePath(filePath),
+        m_animationBuffer(nullptr),
+        m_skinningConstantBuffer(nullptr),
         m_aVertices(std::vector<SimpleVertex>()),
-        m_aIndices(std::vector<WORD>())
+        m_aAnimationData(std::vector<AnimationData>()),
+        m_aIndices(std::vector<WORD>()),
+        m_aBoneData(std::vector<VertexBoneData>()),
+        m_aBoneInfo(std::vector<BoneInfo>()),
+        m_aTransforms(std::vector<XMMATRIX>()),
+        m_boneNameToIndexMap(std::unordered_map<std::string, UINT>()),
+        m_pScene(),
+        m_timeSinceLoaded(),
+        m_globalInverseTransform(XMMATRIX())
     {
     }
 
@@ -91,28 +98,29 @@ namespace library
       Returns:  HRESULT
                   Status code
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: Model::Initialize definition (remove the comment)
-    --------------------------------------------------------------------*/
+
     HRESULT Model::Initialize(_In_ ID3D11Device* pDevice, _In_ ID3D11DeviceContext* pImmediateContext)
     {
+
         HRESULT hr = S_OK;
 
         // Create the buffers for the vertices attributes
 
-        // Create an assimp importer
-        Assimp::Importer importer;
-
         // Read the 3d model file using the importer and get an aiScene
-        const aiScene* pScene = importer.ReadFile(
+        m_pScene = sm_pImporter->ReadFile(
             m_filePath.string().c_str(),
             ASSIMP_LOAD_FLAGS // Load flags are provided in Common.h as ASSIMP_LOAD_FLAGS
         );
 
-        // If a valid scene is returned, initialize the model from it using the protected member function initFromScene
-        if (pScene)
+        // If a valid scene is returned
+        if (m_pScene)
         {
-            hr = initFromScene(pDevice, pImmediateContext, pScene, m_filePath);
+            // set  m_globalInverseTransform as matrix from world space to model space
+            XMMATRIX rootNodeTransform = ConvertMatrix(m_pScene->mRootNode->mTransformation);
+            m_globalInverseTransform = XMMatrixInverse(nullptr, rootNodeTransform);
+            
+            // initialize the model from it using the protected member function initFromScene
+            hr = initFromScene(pDevice, pImmediateContext, m_pScene, m_filePath);
         }
         else
         {
@@ -120,7 +128,7 @@ namespace library
             OutputDebugString(L"Error parsing ");
             OutputDebugString(m_filePath.c_str());
             OutputDebugString(L": ");
-            OutputDebugStringA(importer.GetErrorString());
+            OutputDebugStringA(sm_pImporter->GetErrorString());
             OutputDebugString(L"\n");
         }
 
@@ -128,6 +136,95 @@ namespace library
         {
             return hr;
         }
+
+
+        // Create the vertex buffer, m_animationBuffer with initial data  m_aAnimationData
+        D3D11_BUFFER_DESC anim_bd =
+        {
+            .ByteWidth = sizeof(AnimationData) * (UINT)m_aAnimationData.size(),
+            .Usage = D3D11_USAGE_DEFAULT,
+            .BindFlags = D3D11_BIND_VERTEX_BUFFER,
+            .CPUAccessFlags = 0,
+            .MiscFlags = 0,
+            .StructureByteStride = 0
+        };
+
+        D3D11_SUBRESOURCE_DATA anim_initData =
+        {
+            .pSysMem = m_aAnimationData.data(),
+            .SysMemPitch = 0,
+            .SysMemSlicePitch = 0
+        };
+
+        hr = pDevice->CreateBuffer(
+            &anim_bd,
+            &anim_initData,
+            m_animationBuffer.GetAddressOf()
+        );
+        if (FAILED(hr))
+        {
+            OutputDebugString(L"Model::Initialize Error: Create animation Vertex Buffer Error");
+
+            return hr;
+        }
+
+        //Create the constant buffer, m_skinningConstantBuffer
+
+        CBChangesEveryFrame cb = {
+            // Initialize the world matrix
+            //    world matrix is simply an identity matrix
+            .World = XMMatrixTranspose(XMMatrixIdentity()),
+            .OutputColor = m_outputColor
+        };
+
+        D3D11_BUFFER_DESC constant_bd = {
+            .ByteWidth = sizeof(CBChangesEveryFrame),
+            .Usage = D3D11_USAGE_DEFAULT,
+            .BindFlags = D3D11_BIND_CONSTANT_BUFFER,
+            .CPUAccessFlags = 0,
+            .MiscFlags = 0,
+            .StructureByteStride = 0,
+        };
+
+        D3D11_SUBRESOURCE_DATA constant_initData = {
+            .pSysMem = &cb,
+            .SysMemPitch = 0,
+            .SysMemSlicePitch = 0,
+        };
+
+
+        hr = pDevice->CreateBuffer(
+            &constant_bd,
+            &constant_initData,
+            m_skinningConstantBuffer.GetAddressOf()
+        );
+        if (FAILED(hr))
+        {
+            OutputDebugString(L"Model::Initialize Error: Create Constant Buffer Error");
+
+            return hr;
+        }
+
+        D3D11_BUFFER_DESC cb_skinning = {
+            .ByteWidth = sizeof(CBSkinning),
+            .Usage = D3D11_USAGE_DEFAULT,
+            .BindFlags = D3D11_BIND_CONSTANT_BUFFER,
+            .CPUAccessFlags = 0,
+            .MiscFlags = 0,
+            .StructureByteStride = 0
+        };
+
+        hr = pDevice->CreateBuffer(
+            &cb_skinning,
+            nullptr,
+            m_skinningConstantBuffer.GetAddressOf()
+        );
+        if (FAILED(hr))
+        {
+            OutputDebugString(L"Model::Initialize Error: Create CBSkinning Constant Buffer Error");
+            return hr;
+        }
+
 
         return hr;
     }
@@ -139,12 +236,46 @@ namespace library
                   Time difference of a frame
       Modifies: [m_aTransforms].
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: Model::Update definition (remove the comment)
-    --------------------------------------------------------------------*/
+
     void Model::Update(_In_ FLOAT deltaTime)
     {
-        UNREFERENCED_PARAMETER(deltaTime);
+        //UNREFERENCED_PARAMETER(deltaTime);
+
+        // Update  m_timeSinceLoaded by adding delta time
+        m_timeSinceLoaded += deltaTime;
+
+        // If m_pScene has animations,
+        if (m_pScene->HasAnimations())
+        {
+
+            FLOAT ticksPerSecond =
+                static_cast<FLOAT>(m_pScene->mAnimations[0]->mTicksPerSecond !=
+                    0.0 ? m_pScene->mAnimations[0]->mTicksPerSecond : 25.0f);
+            FLOAT timeInTicks = m_timeSinceLoaded * ticksPerSecond;
+            FLOAT animationTimeTicks = fmod(timeInTicks,
+                static_cast<FLOAT>(m_pScene->mAnimations[0]->mDuration));
+
+
+
+            // If root node of  m_pScene is valid,
+            if (m_pScene->mRootNode)
+            {
+                // Calculate the bone transform matrices by calling member function readNodeHierarchy, starting with root node
+                //    Resize m_aTransforms same as  m_aBoneInfo
+                //    Store each final transformations in the bone information to the m_aTransforms
+
+                readNodeHierarchy(animationTimeTicks, m_pScene->mRootNode, XMMatrixIdentity());
+
+                m_aTransforms.resize(m_aBoneInfo.size());
+
+                for (UINT i = 0; i < m_aTransforms.size(); ++i)
+                {
+                    m_aTransforms[i] = m_aBoneInfo[i].FinalTransformation;
+                }
+            }            
+
+        }
+
     }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
@@ -223,25 +354,19 @@ namespace library
 
     void Model::countVerticesAndIndices(_Inout_ UINT& uOutNumVertices, _Inout_ UINT& uOutNumIndices, _In_ const aiScene* pScene)
     {
-        m_aMeshes.resize(pScene->mNumMeshes);
-        m_aMaterials.resize(pScene->mNumMaterials);
-
-        UINT uNumVertices = 0u;
-        UINT uNumIndices = 0u;
+       
 
         for (UINT i = 0u; i < m_aMeshes.size(); ++i)
         {
             m_aMeshes[i].uMaterialIndex = pScene->mMeshes[i]->mMaterialIndex;
+            m_aMeshes[i].uBaseIndex = uOutNumIndices;
+            m_aMeshes[i].uBaseVertex = uOutNumVertices;
             m_aMeshes[i].uNumIndices = pScene->mMeshes[i]->mNumFaces * 3u;
-            m_aMeshes[i].uBaseVertex = uNumVertices;
-            m_aMeshes[i].uBaseIndex = uNumIndices;
 
-            uNumVertices += pScene->mMeshes[i]->mNumVertices;
-            uNumIndices += m_aMeshes[i].uNumIndices;
+            uOutNumIndices += pScene->mMeshes[i]->mNumFaces * 3u;
+            uOutNumVertices += pScene->mMeshes[i]->mNumVertices;
         }
 
-        uOutNumVertices = uNumVertices;
-        uOutNumIndices = uNumIndices;
 
     }
 
@@ -443,6 +568,9 @@ namespace library
         UINT uNumVertices = 0u;
         UINT uNumIndices = 0u;
 
+        m_aMeshes.resize(pScene->mNumMeshes);
+        m_aMaterials.resize(pScene->mNumMaterials);
+
         // Load the mesh information to get the total number of vertices / indices 
         countVerticesAndIndices(uNumVertices, uNumIndices, pScene);
         // Reserve spaces for the vertices and indices data
@@ -455,6 +583,28 @@ namespace library
         {
             return hr;
         }
+        
+
+        // For each vertex
+        AnimationData animData;
+        m_aAnimationData.resize(GetNumVertices());
+        for (UINT i = 0u; i < GetNumVertices(); ++i)
+        {
+            // Create AnimationData for the vertex  and add it to m_aAnimationData
+            // The elements of AnimationData come from m_aBoneData
+
+            animData.aBoneIndices = XMUINT4(m_aBoneData[i].aBoneIds[0],
+                                            m_aBoneData[i].aBoneIds[1],
+                                            m_aBoneData[i].aBoneIds[2],
+                                            m_aBoneData[i].aBoneIds[3]);
+            animData.aBoneWeights = XMFLOAT4(m_aBoneData[i].aWeights[0],
+                                             m_aBoneData[i].aWeights[1], 
+                                             m_aBoneData[i].aWeights[2], 
+                                             m_aBoneData[i].aWeights[3]);
+
+            m_aAnimationData[i] = animData;
+        }
+
         // Initialize the buffers
         hr = initialize(pDevice, pImmediateContext);
         if (FAILED(hr))
@@ -509,9 +659,16 @@ namespace library
       Args:     const aiScene* pScene
                   Assimp scene
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: Model::initMeshBones definition (remove the comment)
-    --------------------------------------------------------------------*/
+
+    void Model::initMeshBones(_In_ UINT uMeshIndex, _In_ const aiMesh* pMesh)
+    {
+        // For each bone of the given mesh
+        for (UINT i = 0u; i < pMesh->mNumBones; ++i)
+        {
+            // Call initMeshSingleBone
+            initMeshSingleBone(uMeshIndex, pMesh->mBones[i]);
+        }
+    }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   Model::initMeshSingleBone
@@ -545,7 +702,7 @@ namespace library
                   Point to an assimp mesh object
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 
-    void Model::initSingleMesh(_In_ const aiMesh* pMesh)
+    void Model::initSingleMesh(_In_ UINT uMeshIndex, _In_ const aiMesh* pMesh)
     {
         const aiVector3D zero3d(0.0f, 0.0f, 0.0f);
 
@@ -583,6 +740,9 @@ namespace library
             m_aIndices.push_back(aIndices[1]);
             m_aIndices.push_back(aIndices[2]);
         }
+
+        // After populating the vertex attribute, call initMeshBones
+        initMeshBones(uMeshIndex, pMesh);
     }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
@@ -628,9 +788,32 @@ namespace library
                 const aiNodeAnim* pNodeAnim
                   Pointer to an assimp node anim object
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: Model::interpolateRotation definition (remove the comment)
-    --------------------------------------------------------------------*/
+    
+    void Model::interpolateRotation(_Inout_ XMVECTOR& outQuaternion, _In_ FLOAT animationTimeTicks, _In_ const aiNodeAnim* pNodeAnim)
+    {
+        if (pNodeAnim->mNumRotationKeys == 1)
+        {
+            outQuaternion = ConvertQuaternionToVector(pNodeAnim->mRotationKeys->mValue);
+            return;
+        }
+
+        aiQuaternion quaternion;
+
+        UINT uRotationIndex = findRotation(animationTimeTicks, pNodeAnim);
+        UINT uNextRotationIndex = uRotationIndex + 1u;
+        assert(uNextRotationIndex < pNodeAnim->mNumRotationKeys);
+
+        FLOAT t1 = static_cast<FLOAT>(pNodeAnim->mRotationKeys[uRotationIndex].mTime);
+        FLOAT t2 = static_cast<FLOAT>(pNodeAnim->mRotationKeys[uNextRotationIndex].mTime);
+        FLOAT deltaTime = t2 - t1;
+        FLOAT factor = (animationTimeTicks - t1) / deltaTime;
+        assert(factor >= 0.0f && factor <= 1.0f);
+        const aiQuaternion& start = pNodeAnim->mRotationKeys[uRotationIndex].mValue;
+        const aiQuaternion& end = pNodeAnim->mRotationKeys[uNextRotationIndex].mValue;
+        aiQuaternion::Interpolate(quaternion, start, end, factor);
+        quaternion.Normalize();
+        outQuaternion = ConvertQuaternionToVector(quaternion);
+    }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   Model::interpolateScaling
@@ -642,9 +825,29 @@ namespace library
                 const aiNodeAnim* pNodeAnim
                   Pointer to an assimp node anim object
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: Model::interpolateScaling definition (remove the comment)
-    --------------------------------------------------------------------*/
+
+    void Model::interpolateScaling(_Inout_ XMFLOAT3& outScale, _In_ FLOAT animationTimeTicks, _In_ const aiNodeAnim* pNodeAnim)
+    {
+        if (pNodeAnim->mNumScalingKeys == 1)
+        {
+            outScale = ConvertVector3dToFloat3(pNodeAnim->mScalingKeys->mValue);
+            return;
+        }
+
+        UINT uScalingIndex = findScaling(animationTimeTicks, pNodeAnim);
+        UINT uNextScalingIndex = uScalingIndex + 1u;
+        assert(uNextScalingIndex < pNodeAnim->mNumScalingKeys);
+
+        FLOAT t1 = static_cast<FLOAT>(pNodeAnim->mScalingKeys[uScalingIndex].mTime);
+        FLOAT t2 = static_cast<FLOAT>(pNodeAnim->mScalingKeys[uNextScalingIndex].mTime);
+        FLOAT deltaTime = t2 - t1;
+        FLOAT factor = (animationTimeTicks - t1) / deltaTime;
+        assert(factor >= 0.0f && factor <= 1.0f);
+        const aiVector3D& start = pNodeAnim->mScalingKeys[uScalingIndex].mValue;
+        const aiVector3D& end = pNodeAnim->mScalingKeys[uNextScalingIndex].mValue;
+        aiVector3D delta = end - start;
+        outScale = ConvertVector3dToFloat3(start + factor * delta);
+    }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   Model::loadDiffuseTexture
@@ -793,12 +996,18 @@ namespace library
         HRESULT hr = loadDiffuseTexture(pDevice, pImmediateContext, parentDirectory, pMaterial, uIndex);
         if (FAILED(hr))
         {
+            OutputDebugString(L"Error loading diffuse texture \"");
+            OutputDebugString(L"\"\n");
+
             return hr;
         }
 
         hr = loadSpecularTexture(pDevice, pImmediateContext, parentDirectory, pMaterial, uIndex);
         if (FAILED(hr))
         {
+            OutputDebugString(L"Error loading specular texture \"");
+            OutputDebugString(L"\"\n");
+
             return hr;
         }
 
@@ -815,9 +1024,57 @@ namespace library
                 const XMMATRIX& parentTransform
                   Parent transform in hierarchy
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: Model::readNodeHierarchy definition (remove the comment)
-    --------------------------------------------------------------------*/
+
+    void Model::readNodeHierarchy(_In_ FLOAT animationTimeTicks, _In_ const aiNode* pNode, _In_ const XMMATRIX& parentTransform)
+    {
+
+        // Declare a XMMATRIX local variable ¡®NodeTransform¡¯ that has mTransformation of current aiNode
+        XMMATRIX nodeTransformation = ConvertMatrix(pNode->mTransformation);
+
+        // Find current aiNodeAnim, using member function findNodeAnimOrNull
+        auto pNodeAnim = findNodeAnimOrNull(m_pScene->mAnimations[0], pNode->mName.C_Str());
+        if (pNodeAnim) // If aiNodeAnim  is valid
+        {
+
+            XMFLOAT3 scaling = XMFLOAT3();
+            XMVECTOR rotation = XMVECTOR();
+            XMFLOAT3 translation = XMFLOAT3();
+            
+            // Calculate scaling matrix, using member function interpolateScaling
+            interpolateScaling(scaling, animationTimeTicks, pNodeAnim);
+            // Calculate rotation matrix, using member function interpolateRotation
+            interpolateRotation(rotation, animationTimeTicks, pNodeAnim);
+            // Calculate translation matrix, using member function interpolatePosition
+            interpolatePosition(translation, animationTimeTicks, pNodeAnim);
+            // Replace NodeTransform with final transformation matrix
+            nodeTransformation = XMMatrixScaling(scaling.x, scaling.y, scaling.z)
+                * XMMatrixRotationQuaternion(rotation)
+                * XMMatrixTranslation(translation.x, translation.y, translation.z);
+        }
+
+        // Declare a XMMATRIX local variable ¡®gloablTransformation¡¯, represented by nodeTransformation * parentTransform
+        XMMATRIX globalTransformation = nodeTransformation * parentTransform;
+
+        // If m_boneNameToIndexMap has the key that matches the name of the given node
+        if (m_boneNameToIndexMap.contains(pNode->mName.C_Str()))
+        {
+            // Get the bone index and retrieve the boneInfo in m_aBoneInfo
+            auto boneNameIndex = m_boneNameToIndexMap.find(pNode->mName.C_Str());
+
+            UINT boneIndex = boneNameIndex->second;
+
+            // Set the FinalTransformation of boneInfo properly
+            m_aBoneInfo[boneIndex].FinalTransformation = m_aBoneInfo[boneIndex].OffsetMatrix * globalTransformation * m_globalInverseTransform;
+        }
+
+        // For each child of current node,
+        for (int i = 0; i < pNode->mNumChildren; ++i)
+        {
+            // Call readNodeHierarchy
+            readNodeHierarchy(animationTimeTicks, pNode->mChildren[i], globalTransformation);
+        }
+
+    }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   Model::reserveSpace
@@ -832,5 +1089,6 @@ namespace library
     {
         m_aVertices.reserve(uNumVertices);
         m_aIndices.reserve(uNumIndices);
+        m_aBoneData.resize(uNumVertices);
     }
 }

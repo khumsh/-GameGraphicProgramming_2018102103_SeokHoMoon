@@ -96,8 +96,8 @@ namespace library
     
     void Camera::HandleInput(_In_ const DirectionsInput& directions, _In_ const MouseRelativeMovement& mouseRelativeMovement, _In_ FLOAT deltaTime)
     {
-        m_travelSpeed = 180 * deltaTime;
-        m_rotationSpeed = 10 * deltaTime;
+        m_travelSpeed = 20 * deltaTime;
+        m_rotationSpeed = 3 * deltaTime;
 
         if (directions.bLeft)
         {

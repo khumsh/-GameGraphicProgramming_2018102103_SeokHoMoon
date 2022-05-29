@@ -6,36 +6,29 @@ namespace library
       Method:   Renderer::Renderer
       Summary:  Constructor
       Modifies: [m_driverType, m_featureLevel, m_d3dDevice, m_d3dDevice1,
-                 m_immediateContext, m_immediateContext1, m_swapChain,
-                 m_swapChain1, m_renderTargetView, m_depthStencil,
-                 m_depthStencilView, m_cbChangeOnResize, m_camera,
-                 m_projection, m_renderables, m_vertexShaders,
-                 m_pixelShaders].
+                  m_immediateContext, m_immediateContext1, m_swapChain,
+                  m_swapChain1, m_renderTargetView, m_vertexShader,
+                  m_pixelShader, m_vertexLayout, m_vertexBuffer].
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    
     Renderer::Renderer()
-        : m_driverType(D3D_DRIVER_TYPE_NULL),
-        m_featureLevel(D3D_FEATURE_LEVEL_11_0),
-        m_d3dDevice(nullptr),
-        m_d3dDevice1(nullptr),
-        m_immediateContext(nullptr),
-        m_immediateContext1(nullptr),
-        m_swapChain(nullptr),
-        m_swapChain1(nullptr),
-        m_renderTargetView(nullptr),
-        m_depthStencil(nullptr),
-        m_depthStencilView(nullptr),
-        m_cbChangeOnResize(nullptr),
-        m_cbLights(nullptr),
-        m_camera(XMVECTOR()),
-        m_projection(XMMatrixIdentity()),
-        m_renderables(std::unordered_map<PCWSTR, std::shared_ptr<Renderable>>()),
-        m_aPointLights{ std::shared_ptr<PointLight>() },
-        m_vertexShaders(std::unordered_map<PCWSTR, std::shared_ptr<VertexShader>>()),
-        m_pixelShaders(std::unordered_map<PCWSTR, std::shared_ptr<PixelShader>>()),
-        m_pszMainSceneName(PCWSTR()),
-        m_models(std::unordered_map<PCWSTR, std::shared_ptr<Model>>()),
-        m_scenes(std::unordered_map < std::wstring, std::shared_ptr<Scene>>())
+        : m_driverType(D3D_DRIVER_TYPE_NULL)
+        , m_featureLevel(D3D_FEATURE_LEVEL_11_0)
+        , m_d3dDevice()
+        , m_d3dDevice1()
+        , m_immediateContext()
+        , m_immediateContext1()
+        , m_swapChain()
+        , m_swapChain1()
+        , m_renderTargetView()
+        , m_depthStencil()
+        , m_depthStencilView()
+        , m_cbChangeOnResize()
+        , m_pszMainSceneName(nullptr)
+        , m_padding{ '\0' }
+        , m_camera(XMVectorSet(0.0f, 3.0f, -6.0f, 0.0f))
+        , m_projection()
+        , m_scenes()
+        , m_invalidTexture(std::make_shared<Texture>(L"Content/Common/InvalidTexture.png"))
     {
     }
 
@@ -45,24 +38,25 @@ namespace library
       Args:     HWND hWnd
                   Handle to the window
       Modifies: [m_d3dDevice, m_featureLevel, m_immediateContext,
-                 m_d3dDevice1, m_immediateContext1, m_swapChain1,
-                 m_swapChain, m_renderTargetView, m_cbChangeOnResize,
-                 m_projection, m_camera, m_vertexShaders,
-                 m_pixelShaders, m_renderables].
+                  m_d3dDevice1, m_immediateContext1, m_swapChain1,
+                  m_swapChain, m_renderTargetView, m_vertexShader,
+                  m_vertexLayout, m_pixelShader, m_vertexBuffer].
       Returns:  HRESULT
                   Status code
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    
     HRESULT Renderer::Initialize(_In_ HWND hWnd)
     {
         HRESULT hr = S_OK;
 
         RECT rc;
         GetClientRect(hWnd, &rc);
-        UINT width = rc.right - static_cast<UINT>(rc.left);
-        UINT height = rc.bottom - static_cast<UINT>(rc.top);
+        UINT uWidth = static_cast<UINT>(rc.right - rc.left);
+        UINT uHeight = static_cast<UINT>(rc.bottom - rc.top);
 
-        UINT createDeviceFlags = 0;
+        UINT uCreateDeviceFlags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
+#if defined(DEBUG) || defined(_DEBUG)
+        uCreateDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
 
         D3D_DRIVER_TYPE driverTypes[] =
         {
@@ -84,69 +78,67 @@ namespace library
         for (UINT driverTypeIndex = 0; driverTypeIndex < numDriverTypes; driverTypeIndex++)
         {
             m_driverType = driverTypes[driverTypeIndex];
-            hr = D3D11CreateDevice(nullptr, m_driverType, nullptr, createDeviceFlags, featureLevels, numFeatureLevels,
+            hr = D3D11CreateDevice(nullptr, m_driverType, nullptr, uCreateDeviceFlags, featureLevels, numFeatureLevels,
                 D3D11_SDK_VERSION, m_d3dDevice.GetAddressOf(), &m_featureLevel, m_immediateContext.GetAddressOf());
 
             if (hr == E_INVALIDARG)
             {
                 // DirectX 11.0 platforms will not recognize D3D_FEATURE_LEVEL_11_1 so we need to retry without it
-                hr = D3D11CreateDevice(nullptr, m_driverType, nullptr, createDeviceFlags, &featureLevels[1], numFeatureLevels - 1,
+                hr = D3D11CreateDevice(nullptr, m_driverType, nullptr, uCreateDeviceFlags, &featureLevels[1], numFeatureLevels - 1,
                     D3D11_SDK_VERSION, m_d3dDevice.GetAddressOf(), &m_featureLevel, m_immediateContext.GetAddressOf());
             }
 
             if (SUCCEEDED(hr))
+            {
                 break;
+            }
         }
         if (FAILED(hr))
+        {
             return hr;
+        }
 
         // Obtain DXGI factory from device (since we used nullptr for pAdapter above)
-        ComPtr<IDXGIFactory1>           dxgiFactory(nullptr);
+        ComPtr<IDXGIFactory1> dxgiFactory;
         {
-            ComPtr<IDXGIDevice>           dxgiDevice(nullptr);
+            ComPtr<IDXGIDevice> dxgiDevice;
             hr = m_d3dDevice.As(&dxgiDevice);
             if (SUCCEEDED(hr))
             {
-                ComPtr<IDXGIAdapter>           adapter(nullptr);
-
-                hr = dxgiDevice->GetAdapter(adapter.GetAddressOf());
+                ComPtr<IDXGIAdapter> adapter;
+                hr = dxgiDevice->GetAdapter(&adapter);
                 if (SUCCEEDED(hr))
                 {
-                    hr = adapter->GetParent(__uuidof(IDXGIFactory1), (&dxgiFactory));
+                    hr = adapter->GetParent(IID_PPV_ARGS(&dxgiFactory));
                 }
             }
         }
         if (FAILED(hr))
+        {
             return hr;
+        }
 
         // Create swap chain
-        ComPtr<IDXGIFactory2>           dxgiFactory2(nullptr);
+        ComPtr<IDXGIFactory2> dxgiFactory2;
         hr = dxgiFactory.As(&dxgiFactory2);
-        if (dxgiFactory2)
+        if (SUCCEEDED(hr))
         {
             // DirectX 11.1 or later
             hr = m_d3dDevice.As(&m_d3dDevice1);
             if (SUCCEEDED(hr))
             {
-                hr = m_immediateContext.As(&m_immediateContext1);
+                m_immediateContext.As(&m_immediateContext1);
             }
-
-            DXGI_SAMPLE_DESC sampleDesc = {
-                .Count = 1,
-                .Quality = 0
-            };
 
             DXGI_SWAP_CHAIN_DESC1 sd =
             {
-                .Width = width,
-                .Height = height,
+                .Width = uWidth,
+                .Height = uHeight,
                 .Format = DXGI_FORMAT_R8G8B8A8_UNORM,
-                .SampleDesc = sampleDesc,
+                .SampleDesc = {.Count = 1u, .Quality = 0u },
                 .BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT,
-                .BufferCount = 1
+                .BufferCount = 1u
             };
-
-
 
             hr = dxgiFactory2->CreateSwapChainForHwnd(m_d3dDevice.Get(), hWnd, &sd, nullptr, nullptr, m_swapChain1.GetAddressOf());
             if (SUCCEEDED(hr))
@@ -156,30 +148,13 @@ namespace library
         }
         else
         {
-            DXGI_RATIONAL refreshRate = {
-                .Numerator = 60,
-                .Denominator = 1
-            };
-
-            DXGI_MODE_DESC bufferDesc = {
-                .Width = width,
-                .Height = height,
-                .RefreshRate = refreshRate,
-                .Format = DXGI_FORMAT_R8G8B8A8_UNORM
-            };
-
-            DXGI_SAMPLE_DESC sampleDesc = {
-                .Count = 1,
-                .Quality = 0
-            };
-
             // DirectX 11.0 systems
             DXGI_SWAP_CHAIN_DESC sd =
             {
-                .BufferDesc = bufferDesc,
-                .SampleDesc = sampleDesc,
+                .BufferDesc = {.Width = uWidth, .Height = uHeight, .RefreshRate = {.Numerator = 60, .Denominator = 1 }, .Format = DXGI_FORMAT_R8G8B8A8_UNORM },
+                .SampleDesc = {.Count = 1, .Quality = 0 },
                 .BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT,
-                .BufferCount = 1,
+                .BufferCount = 1u,
                 .OutputWindow = hWnd,
                 .Windowed = TRUE
             };
@@ -190,89 +165,52 @@ namespace library
         // Note this tutorial doesn't handle full-screen swapchains so we block the ALT+ENTER shortcut
         dxgiFactory->MakeWindowAssociation(hWnd, DXGI_MWA_NO_ALT_ENTER);
 
-
         if (FAILED(hr))
+        {
             return hr;
+        }
 
         // Create a render target view
-        ComPtr<ID3D11Texture2D>           pBackBuffer(nullptr);
-
-        hr = m_swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (&pBackBuffer));
+        ComPtr<ID3D11Texture2D> pBackBuffer;
+        hr = m_swapChain->GetBuffer(0, IID_PPV_ARGS(&pBackBuffer));
         if (FAILED(hr))
+        {
             return hr;
+        }
 
         hr = m_d3dDevice->CreateRenderTargetView(pBackBuffer.Get(), nullptr, m_renderTargetView.GetAddressOf());
         if (FAILED(hr))
-            return hr;
-
-        
-
-        // Setup the viewport
-        D3D11_VIEWPORT vp =
         {
-            .TopLeftX = 0,
-            .TopLeftY = 0,
-            .Width = (FLOAT)width,
-            .Height = (FLOAT)height,
-            .MinDepth = 0.0f,
-            .MaxDepth = 1.0f
-        };
-
-        m_immediateContext->RSSetViewports(1, &vp);
-
-
-
-
-        //Create depth stencil texture and the depth stencil view
-        //Initialize view matrixand the projection matrix
-        //Initialize the shaders, then the renderables
-        //    Shaders and renderables are stored in Hash maps
-        //    Strings are used as the key, and the shader / renderable objects are the value
-        //    When iterating, use iterators
-
+            return hr;
+        }
 
         // Create depth stencil texture
-        DXGI_SAMPLE_DESC sampleDesc =
-        {
-            // The default sampler mode, with no anti-aliasing
-            .Count = 1,
-            .Quality = 0
-        };
-
         D3D11_TEXTURE2D_DESC descDepth =
         {
-            .Width = width,
-            .Height = height,
-            .MipLevels = 1,
-            .ArraySize = 1,
+            .Width = uWidth,
+            .Height = uHeight,
+            .MipLevels = 1u,
+            .ArraySize = 1u,
             .Format = DXGI_FORMAT_D24_UNORM_S8_UINT,
-            .SampleDesc = sampleDesc,
+            .SampleDesc = {.Count = 1u, .Quality = 0u },
             .Usage = D3D11_USAGE_DEFAULT,
             .BindFlags = D3D11_BIND_DEPTH_STENCIL,
-            .CPUAccessFlags = 0,
-            .MiscFlags = 0
+            .CPUAccessFlags = 0u,
+            .MiscFlags = 0u
         };
-
-
-        hr = m_d3dDevice->CreateTexture2D(&descDepth, NULL, m_depthStencil.GetAddressOf());
+        hr = m_d3dDevice->CreateTexture2D(&descDepth, nullptr, m_depthStencil.GetAddressOf());
         if (FAILED(hr))
         {
             return hr;
         }
 
         // Create the depth stencil view
-        D3D11_TEX2D_DSV texture2D =
-        {
-            .MipSlice = 0
-        };
-
         D3D11_DEPTH_STENCIL_VIEW_DESC descDSV =
         {
             .Format = descDepth.Format,
             .ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D,
-            .Texture2D = texture2D
+            .Texture2D = {.MipSlice = 0 }
         };
-
         hr = m_d3dDevice->CreateDepthStencilView(m_depthStencil.Get(), &descDSV, m_depthStencilView.GetAddressOf());
         if (FAILED(hr))
         {
@@ -281,250 +219,116 @@ namespace library
 
         m_immediateContext->OMSetRenderTargets(1, m_renderTargetView.GetAddressOf(), m_depthStencilView.Get());
 
-        // projection
-        float fovAngleY = XM_PIDIV2;
-        float aspectRatio = width / height;
-        float nearZ = 0.01f;
-        float farZ = 100.0f;
-
-        m_projection = XMMatrixPerspectiveFovLH(fovAngleY, aspectRatio, nearZ, farZ);
-
-        // Initializing Objects
-        hr = m_camera.Initialize(m_d3dDevice.Get());
-        if (FAILED(hr))
+        // Setup the viewport
+        D3D11_VIEWPORT vp =
         {
-            return hr;
-        }
-            
+            .TopLeftX = 0.0f,
+            .TopLeftY = 0.0f,
+            .Width = static_cast<FLOAT>(uWidth),
+            .Height = static_cast<FLOAT>(uHeight),
+            .MinDepth = 0.0f,
+            .MaxDepth = 1.0f,
+        };
+        m_immediateContext->RSSetViewports(1, &vp);
 
-        std::unordered_map<PCWSTR, std::shared_ptr<VertexShader>>::iterator it_vertexShaders;
+        // Set primitive topology
+        m_immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-        for (it_vertexShaders = m_vertexShaders.begin(); it_vertexShaders != m_vertexShaders.end(); it_vertexShaders++)
+        // Create the constant buffers
+        D3D11_BUFFER_DESC bd =
         {
-            hr = it_vertexShaders->second->Initialize(m_d3dDevice.Get());
-            if (FAILED(hr))
-            {
-                return hr;
-            }
-        }
-
-
-        std::unordered_map<PCWSTR, std::shared_ptr<PixelShader>>::iterator it_pixelShaders;
-
-        for (it_pixelShaders = m_pixelShaders.begin(); it_pixelShaders != m_pixelShaders.end(); it_pixelShaders++)
-        {
-            hr = it_pixelShaders->second->Initialize(m_d3dDevice.Get());
-            if (FAILED(hr))
-            {
-                return hr;
-            }
-        }
-
-        std::unordered_map<PCWSTR, std::shared_ptr<Renderable>>::iterator it_renderables;
-
-        for (it_renderables = m_renderables.begin(); it_renderables != m_renderables.end(); it_renderables++)
-        {
-            hr = it_renderables->second->Initialize(m_d3dDevice.Get(), m_immediateContext.Get());
-            if (FAILED(hr))
-            {
-                return hr;
-            }
-        }
-
-        std::unordered_map<std::wstring, std::shared_ptr<Scene>>::iterator it_scenes;
-
-        for (it_scenes = m_scenes.begin(); it_scenes != m_scenes.end(); it_scenes++)
-        {
-            hr = it_scenes->second->Initialize(m_d3dDevice.Get(), m_immediateContext.Get());
-            if (FAILED(hr))
-            {
-                return hr;
-            }
-        }
-
-        std::unordered_map<PCWSTR, std::shared_ptr<Model>>::iterator it_models;
-
-        for (it_models = m_models.begin(); it_models != m_models.end(); it_models++)
-        {
-            hr = it_models->second->Initialize(m_d3dDevice.Get(), m_immediateContext.Get());
-            if (FAILED(hr))
-            {
-                return hr;
-            }
-        }
-
-        // create constant buffer
-        D3D11_BUFFER_DESC constantBd = {
             .ByteWidth = sizeof(CBChangeOnResize),
             .Usage = D3D11_USAGE_DEFAULT,
             .BindFlags = D3D11_BIND_CONSTANT_BUFFER,
-            .CPUAccessFlags = 0,
-            .MiscFlags = 0,
-            .StructureByteStride = 0
+            .CPUAccessFlags = 0
         };
-
-        hr = m_d3dDevice->CreateBuffer(&constantBd, nullptr, m_cbChangeOnResize.GetAddressOf());
+        hr = m_d3dDevice->CreateBuffer(&bd, nullptr, m_cbChangeOnResize.GetAddressOf());
         if (FAILED(hr))
         {
             return hr;
         }
 
-        // CBChangeOnResize constant buffer must be created, and set when initializing the renderer
-        CBChangeOnResize cb_projection = {
-                .Projection = XMMatrixTranspose(m_projection)
+        // Initialize the projection matrix
+        m_projection = XMMatrixPerspectiveFovLH(XM_PIDIV4, static_cast<FLOAT>(uWidth) / static_cast<FLOAT>(uHeight), 0.01f, 1000.0f);
+
+        CBChangeOnResize cbChangesOnResize =
+        {
+            .Projection = XMMatrixTranspose(m_projection)
         };
+        m_immediateContext->UpdateSubresource(m_cbChangeOnResize.Get(), 0, nullptr, &cbChangesOnResize, 0, 0);
 
-        m_immediateContext->UpdateSubresource(m_cbChangeOnResize.Get(), 0, nullptr, &cb_projection, 0, 0);
+        bd.ByteWidth = sizeof(CBLights);
+        bd.Usage = D3D11_USAGE_DEFAULT;
+        bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+        bd.CPUAccessFlags = 0u;
 
-        D3D11_BUFFER_DESC cbLights = {
-            .ByteWidth = sizeof(CBLights),
-            .Usage = D3D11_USAGE_DEFAULT,
-            .BindFlags = D3D11_BIND_CONSTANT_BUFFER,
-            .CPUAccessFlags = 0,
-            .MiscFlags = 0,
-            .StructureByteStride = 0
-        };
-
-        hr = m_d3dDevice->CreateBuffer(&cbLights, nullptr, m_cbLights.GetAddressOf());
+        hr = m_d3dDevice->CreateBuffer(&bd, nullptr, m_cbLights.GetAddressOf());
         if (FAILED(hr))
         {
             return hr;
         }
 
-        m_immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        m_camera.Initialize(m_d3dDevice.Get());
+
+        if (!m_scenes.contains(m_pszMainSceneName))
+        {
+            return E_FAIL;
+        }
+
+        hr = m_scenes[m_pszMainSceneName]->Initialize(m_d3dDevice.Get(), m_immediateContext.Get());
+        if (FAILED(hr))
+        {
+            return hr;
+        }
+
+        hr = m_invalidTexture->Initialize(m_d3dDevice.Get(), m_immediateContext.Get());
+        if (FAILED(hr))
+        {
+            return hr;
+        }
 
         return S_OK;
     }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
-      Method:   Renderer::AddModel
-      Summary:  Add a model object
-      Args:     PCWSTR pszModelName
-                  Key of the model object
-                const std::shared_ptr<Model>& pModel
-                  Shared pointer to the model object
-      Modifies: [m_models].
+      Method:   Renderer::AddScene
+      Summary:  Add scene to renderer
+      Args:     PCWSTR pszSceneName
+                  The name of the scene
+                const std::shared_ptr<Scene>&
+                  The shared pointer to Scene
+      Modifies: [m_scenes].
       Returns:  HRESULT
-                  Status code.
+                  Status code
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-
-    HRESULT Renderer::AddModel(_In_ PCWSTR pszModelName, _In_ const std::shared_ptr<Model>& pModel)
+    HRESULT Renderer::AddScene(_In_ PCWSTR pszSceneName, _In_ const std::shared_ptr<Scene>& scene)
     {
-        if (m_models.contains(pszModelName))
+        if (m_scenes.contains(pszSceneName))
         {
             return E_FAIL;
         }
-        else
-        {
-            m_models.insert(std::make_pair(pszModelName, pModel));
 
-            return S_OK;
-        }        
-    }
+        m_scenes[pszSceneName] = scene;
 
-
-    /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
-      Method:   Renderer::AddRenderable
-      Summary:  Add a renderable object and initialize the object
-      Args:     PCWSTR pszRenderableName
-                  Key of the renderable object
-                const std::shared_ptr<Renderable>& renderable
-                  Unique pointer to the renderable object
-      Modifies: [m_renderables].
-      Returns:  HRESULT
-                  Status code.
-    M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    
-    HRESULT Renderer::AddRenderable(_In_ PCWSTR pszRenderableName, _In_ const std::shared_ptr<Renderable>& renderable)
-    {
-        if (m_renderables.contains(pszRenderableName))
-        {
-            return E_FAIL;
-        }
-        else
-        {
-            m_renderables.insert(std::make_pair(pszRenderableName, renderable));
-
-            return S_OK;
-        }
-    }
-
-    /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
-     Method:   Renderer::AddPointLight
-     Summary:  Add a point light
-     Args:     size_t index
-                 Index of the point light
-               const std::shared_ptr<PointLight>& pointLight
-                 Shared pointer to the point light object
-     Modifies: [m_aPointLights].
-     Returns:  HRESULT
-                 Status code.
-   M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-
-    HRESULT Renderer::AddPointLight(_In_ size_t index, _In_ const std::shared_ptr<PointLight>& pPointLight)
-    {
-       /* When the index exceeds the size of possible lights, it returns E_FAIL
-        else, add the light to designated index*/
-        if (index >= NUM_LIGHTS)
-        {
-            return E_FAIL;
-        }
-        m_aPointLights[index] = pPointLight;
-        
         return S_OK;
-        
     }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
-      Method:   Renderer::AddVertexShader
-      Summary:  Add the vertex shader into the renderer
-      Args:     PCWSTR pszVertexShaderName
-                  Key of the vertex shader
-                const std::shared_ptr<VertexShader>&
-                  Vertex shader to add
-      Modifies: [m_vertexShaders].
-      Returns:  HRESULT
-                  Status code
+      Method:   Renderer::GetSceneOrNull
+      Summary:  Return scene with the given name or null
+      Args:     PCWSTR pszSceneName
+                  The name of the scene
+      Returns:  std::shared_ptr<Scene>
+                  The shared pointer to Scene
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    
-    HRESULT Renderer::AddVertexShader(_In_ PCWSTR pszVertexShaderName, _In_ const std::shared_ptr<VertexShader>& vertexShader)
+    std::shared_ptr<Scene> Renderer::GetSceneOrNull(_In_ PCWSTR pszSceneName)
     {
-        if (m_vertexShaders.contains(pszVertexShaderName))
+        if (m_scenes.contains(pszSceneName))
         {
-            return E_FAIL;
+            return m_scenes[pszSceneName];
         }
-        else
-        {
-            m_vertexShaders.insert(std::make_pair(pszVertexShaderName, vertexShader));
 
-            return S_OK;
-        }
-    }
-
-    /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
-      Method:   Renderer::AddPixelShader
-      Summary:  Add the pixel shader into the renderer
-      Args:     PCWSTR pszPixelShaderName
-                  Key of the pixel shader
-                const std::shared_ptr<PixelShader>&
-                  Pixel shader to add
-      Modifies: [m_pixelShaders].
-      Returns:  HRESULT
-                  Status code
-    M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    
-    HRESULT Renderer::AddPixelShader(_In_ PCWSTR pszPixelShaderName, _In_ const std::shared_ptr<PixelShader>& pixelShader)
-    {
-        if (m_pixelShaders.contains(pszPixelShaderName))
-        {
-            return E_FAIL;
-        }
-        else
-        {
-            m_pixelShaders.insert(std::make_pair(pszPixelShaderName, pixelShader));
-
-            return S_OK;
-        }
+        return nullptr;
     }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
@@ -539,7 +343,7 @@ namespace library
                   Status code
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 
-    HRESULT Renderer::AddScene(_In_ PCWSTR pszSceneName, const std::filesystem::path& sceneFilePath)
+    HRESULT Renderer::AddScene(_In_ PCWSTR pszSceneName, _In_ const std::shared_ptr<Scene>& scene)
     {
         if (m_scenes.count(pszSceneName) > 0)
             return E_FAIL;
@@ -553,7 +357,7 @@ namespace library
       Method:   Renderer::SetMainScene
       Summary:  Set the main scene
       Args:     PCWSTR pszSceneName
-                  Name of the scene to set as the main scene
+                  The name of the scene
       Modifies: [m_pszMainSceneName].
       Returns:  HRESULT
                   Status code
@@ -561,8 +365,10 @@ namespace library
 
     HRESULT Renderer::SetMainScene(_In_ PCWSTR pszSceneName)
     {
-        if (m_pszMainSceneName == pszSceneName)
+        if (!m_scenes.contains(pszSceneName))
+        {
             return E_FAIL;
+        }
 
         m_pszMainSceneName = pszSceneName;
 
@@ -571,21 +377,15 @@ namespace library
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   Renderer::HandleInput
-      Summary:  Add the pixel shader into the renderer and initialize it
-      Args:     const DirectionsInput& directions
-                  Data structure containing keyboard input data
-                const MouseRelativeMovement& mouseRelativeMovement
-                  Data structure containing mouse relative input data
-      Modifies: [m_camera].
+      Summary:  Handle user mouse input
+      Args:     DirectionsInput& directions
+                MouseRelativeMovement& mouseRelativeMovement
+                FLOAT deltaTime
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
     
     void Renderer::HandleInput(_In_ const DirectionsInput& directions, _In_ const MouseRelativeMovement& mouseRelativeMovement, _In_ FLOAT deltaTime)
     {
-        m_camera.HandleInput(
-            directions,
-            mouseRelativeMovement,
-            deltaTime
-        );
+        m_camera.HandleInput(directions, mouseRelativeMovement, deltaTime);
     }
 
 
@@ -595,35 +395,20 @@ namespace library
       Args:     FLOAT deltaTime
                   Time difference of a frame
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    
     void Renderer::Update(_In_ FLOAT deltaTime)
     {
-        std::unordered_map<PCWSTR, std::shared_ptr<Renderable>>::iterator it_renderables;
-
-        for (it_renderables = m_renderables.begin(); it_renderables != m_renderables.end(); it_renderables++)
-        {
-            it_renderables->second->Update(deltaTime);
-        }
+        m_scenes[m_pszMainSceneName]->Update(deltaTime);
 
         m_camera.Update(deltaTime);
-
-        for (int i = 0; i < NUM_LIGHTS; ++i)
-        {
-            m_aPointLights[i]->Update(deltaTime);
-        }
-
-        std::unordered_map<PCWSTR, std::shared_ptr<Model>>::iterator it_models;
-
-        for (it_models = m_models.begin(); it_models != m_models.end(); it_models++)
-        {
-            it_models->second->Update(deltaTime);
-        }
     }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   Renderer::Render
       Summary:  Render the frame
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
+    /*--------------------------------------------------------------------
+      TODO: Renderable::Render definition (remove the comment)
+    --------------------------------------------------------------------*/
     
     void Renderer::Render()
     {
@@ -1013,205 +798,11 @@ namespace library
     }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
-      Method:   Renderer::SetVertexShaderOfModel
-      Summary:  Sets the vertex shader for a model
-      Args:     PCWSTR pszModelName
-                  Key of the model
-                PCWSTR pszVertexShaderName
-                  Key of the vertex shader
-      Modifies: [m_renderables].
-      Returns:  HRESULT
-                  Status code
-    M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    HRESULT Renderer::SetVertexShaderOfModel(_In_ PCWSTR pszModelName, _In_ PCWSTR pszVertexShaderName)
-    {
-        if (!m_models.contains(pszModelName))
-        {
-            return E_FAIL;
-        }
-        else
-        {
-            if (m_vertexShaders.contains(pszVertexShaderName))
-            {
-                m_models.find(pszModelName)->second->SetVertexShader(m_vertexShaders.find(pszVertexShaderName)->second);
-                return S_OK;
-            }
-
-            return E_FAIL;
-
-        }
-    }
-
-    /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
-      Method:   Renderer::SetPixelShaderOfModel
-      Summary:  Sets the pixel shader for a model
-      Args:     PCWSTR pszModelName
-                  Key of the model
-                PCWSTR pszPixelShaderName
-                  Key of the pixel shader
-      Modifies: [m_renderables].
-      Returns:  HRESULT
-                  Status code
-    M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-
-    HRESULT Renderer::SetPixelShaderOfModel(_In_ PCWSTR pszModelName, _In_ PCWSTR pszPixelShaderName)
-    {
-        if (!m_models.contains(pszModelName))
-        {
-            return E_FAIL;
-        }
-        else
-        {
-            if (m_pixelShaders.contains(pszPixelShaderName))
-            {
-                m_models.find(pszModelName)->second->SetPixelShader(m_pixelShaders.find(pszPixelShaderName)->second);
-                return S_OK;
-            }
-
-            return E_FAIL;
-
-        }
-    }
-
-
-    /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
-      Method:   Renderer::SetVertexShaderOfRenderable
-      Summary:  Sets the vertex shader for a renderable
-      Args:     PCWSTR pszRenderableName
-                  Key of the renderable
-                PCWSTR pszVertexShaderName
-                  Key of the vertex shader
-      Modifies: [m_renderables].
-      Returns:  HRESULT
-                  Status code
-    M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    
-    HRESULT Renderer::SetVertexShaderOfRenderable(_In_ PCWSTR pszRenderableName, _In_ PCWSTR pszVertexShaderName)
-    {
-        if (!m_renderables.contains(pszRenderableName))
-        {
-            return E_FAIL;
-        }
-        else
-        {
-            if (m_vertexShaders.contains(pszVertexShaderName))
-            {
-                m_renderables.find(pszRenderableName)->second->SetVertexShader(m_vertexShaders.find(pszVertexShaderName)->second);
-                return S_OK;
-            }
-
-            return E_FAIL;
-
-        }
-    }
-
-    /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
-      Method:   Renderer::SetPixelShaderOfRenderable
-      Summary:  Sets the pixel shader for a renderable
-      Args:     PCWSTR pszRenderableName
-                  Key of the renderable
-                PCWSTR pszPixelShaderName
-                  Key of the pixel shader
-      Modifies: [m_renderables].
-      Returns:  HRESULT
-                  Status code
-    M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    
-    HRESULT Renderer::SetPixelShaderOfRenderable(_In_ PCWSTR pszRenderableName, _In_ PCWSTR pszPixelShaderName)
-    {
-        if (!m_renderables.contains(pszRenderableName))
-        {
-            return E_FAIL;
-        }
-        else
-        {
-            if (m_pixelShaders.contains(pszPixelShaderName))
-            {
-                m_renderables.find(pszRenderableName)->second->SetPixelShader(m_pixelShaders.find(pszPixelShaderName)->second);
-                return S_OK;
-            }
-
-            return E_FAIL;
-
-        }
-    }
-
-    /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
-      Method:   Renderer::SetVertexShaderOfScene
-      Summary:  Sets the vertex shader for the voxels in a scene
-      Args:     PCWSTR pszSceneName
-                  Key of the scene
-                PCWSTR pszVertexShaderName
-                  Key of the vertex shader
-      Modifies: [m_scenes].
-      Returns:  HRESULT
-                  Status code
-    M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-
-    HRESULT Renderer::SetVertexShaderOfScene(_In_ PCWSTR pszSceneName, _In_ PCWSTR pszVertexShaderName)
-    {
-        if (!m_scenes.contains(pszSceneName))
-        {
-            return E_FAIL;
-        }
-        else
-        {
-            if (m_vertexShaders.contains(pszVertexShaderName))
-            {
-                for (UINT i = 0u; i < m_scenes.find(pszSceneName)->second->GetVoxels().size(); ++i)
-                {
-                    m_scenes.find(pszSceneName)->second->GetVoxels()[i]->SetVertexShader(m_vertexShaders[pszVertexShaderName]);
-                }
-                return S_OK;
-            }
-
-            return E_FAIL;
-
-        }
-
-    }
-
-    /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
-      Method:   Renderer::SetPixelShaderOfScene
-      Summary:  Sets the pixel shader for the voxels in a scene
-      Args:     PCWSTR pszRenderableName
-                  Key of the renderable
-                PCWSTR pszPixelShaderName
-                  Key of the pixel shader
-      Modifies: [m_renderables].
-      Returns:  HRESULT
-                  Status code
-    M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-
-    HRESULT Renderer::SetPixelShaderOfScene(_In_ PCWSTR pszSceneName, _In_ PCWSTR pszPixelShaderName)
-    {
-        if (!m_scenes.contains(pszSceneName))
-        {
-            return E_FAIL;
-        }
-        else
-        {
-            if (m_pixelShaders.contains(pszPixelShaderName))
-            {
-                for (UINT i = 0u; i < m_scenes.find(pszSceneName)->second->GetVoxels().size(); ++i)
-                {
-                    m_scenes.find(pszSceneName)->second->GetVoxels()[i]->SetPixelShader(m_pixelShaders[pszPixelShaderName]);
-                }
-                return S_OK;
-            }
-
-            return E_FAIL;
-
-        }
-    }
-
-    /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   Renderer::GetDriverType
       Summary:  Returns the Direct3D driver type
       Returns:  D3D_DRIVER_TYPE
                   The Direct3D driver type used
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    
     D3D_DRIVER_TYPE Renderer::GetDriverType() const
     {
         return m_driverType;

@@ -565,47 +565,34 @@ namespace library
     {
         HRESULT hr = S_OK;
 
+        m_aMeshes.resize(pScene->mNumMeshes);
+
         UINT uNumVertices = 0u;
         UINT uNumIndices = 0u;
 
-        m_aMeshes.resize(pScene->mNumMeshes);
-        m_aMaterials.resize(pScene->mNumMaterials);
-
-        // Load the mesh information to get the total number of vertices / indices 
         countVerticesAndIndices(uNumVertices, uNumIndices, pScene);
-        // Reserve spaces for the vertices and indices data
+
         reserveSpace(uNumVertices, uNumIndices);
-        // Initialize the meshes
+
         initAllMeshes(pScene);
-        // Initialize the materials
+
         hr = initMaterials(pDevice, pImmediateContext, pScene, filePath);
         if (FAILED(hr))
         {
             return hr;
         }
-        
 
-        // For each vertex
-        AnimationData animData;
-        m_aAnimationData.resize(GetNumVertices());
-        for (UINT i = 0u; i < GetNumVertices(); ++i)
+        for (size_t i = 0; i < m_aVertices.size(); ++i)
         {
-            // Create AnimationData for the vertex  and add it to m_aAnimationData
-            // The elements of AnimationData come from m_aBoneData
-
-            animData.aBoneIndices = XMUINT4(m_aBoneData[i].aBoneIds[0],
-                                            m_aBoneData[i].aBoneIds[1],
-                                            m_aBoneData[i].aBoneIds[2],
-                                            m_aBoneData[i].aBoneIds[3]);
-            animData.aBoneWeights = XMFLOAT4(m_aBoneData[i].aWeights[0],
-                                             m_aBoneData[i].aWeights[1], 
-                                             m_aBoneData[i].aWeights[2], 
-                                             m_aBoneData[i].aWeights[3]);
-
-            m_aAnimationData[i] = animData;
+            m_aAnimationData.push_back(
+                AnimationData
+                {
+                    .aBoneIndices = XMUINT4(m_aBoneData.at(i).aBoneIds),
+                    .aBoneWeights = XMFLOAT4(m_aBoneData.at(i).aWeights)
+                }
+            );
         }
 
-        // Initialize the buffers
         hr = initialize(pDevice, pImmediateContext);
         if (FAILED(hr))
         {
@@ -646,6 +633,11 @@ namespace library
         for (UINT i = 0u; i < pScene->mNumMaterials; ++i)
         {
             const aiMaterial* pMaterial = pScene->mMaterials[i];
+
+            std::string szName = filePath.string() + std::to_string(i);
+            std::wstring pwszName(szName.length(), L' ');
+            std::copy(szName.begin(), szName.end(), pwszName.begin());
+            m_aMaterials.push_back(std::make_shared<Material>(pwszName));
 
             loadTextures(pDevice, pImmediateContext, parentDirectory, pMaterial, i);
         }
@@ -698,9 +690,14 @@ namespace library
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   Model::initSingleMesh
       Summary:  Initialize single mesh from a given assimp mesh
-      Args:     const aiMesh* pMesh
+      Args:     UINT uMeshIndex
+                  Index of mesh
+                const aiMesh* pMesh
                   Point to an assimp mesh object
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
+    /*--------------------------------------------------------------------
+      TODO: Model::initSingleMesh definition (remove the comment)
+    --------------------------------------------------------------------*/
 
     void Model::initSingleMesh(_In_ UINT uMeshIndex, _In_ const aiMesh* pMesh)
     {
@@ -972,6 +969,62 @@ namespace library
     }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+      Method:   Model::loadNormalTexture
+      Summary:  Load a normal texture from given path
+      Args:     ID3D11Device* pDevice
+                  The Direct3D device to create the buffers
+                ID3D11DeviceContext* pImmediateContext
+                  The Direct3D context to set buffers
+                const std::filesystem::path& parentDirectory
+                  Parent path to the model
+                const aiMaterial* pMaterial
+                  Pointer to an assimp material object
+                UINT uIndex
+                  Index to a material
+    M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
+    HRESULT Model::loadNormalTexture(_In_ ID3D11Device* pDevice, _In_ ID3D11DeviceContext* pImmediateContext, _In_ const std::filesystem::path& parentDirectory, _In_ const aiMaterial* pMaterial, _In_ UINT uIndex)
+    {
+        HRESULT hr = S_OK;
+        m_aMaterials[uIndex]->pNormal = nullptr;
+
+        if (pMaterial->GetTextureCount(aiTextureType_HEIGHT) > 0)
+        {
+            aiString aiPath;
+
+            if (pMaterial->GetTexture(aiTextureType_HEIGHT, 0u, &aiPath, nullptr, nullptr, nullptr, nullptr, nullptr) == AI_SUCCESS)
+            {
+                std::string szPath(aiPath.data);
+
+                if (szPath.substr(0ull, 2ull) == ".\\")
+                {
+                    szPath = szPath.substr(2ull, szPath.size() - 2ull);
+                }
+
+                std::filesystem::path fullPath = parentDirectory / szPath;
+
+                m_aMaterials[uIndex]->pNormal = std::make_shared<Texture>(fullPath);
+                m_bHasNormalMap = true;
+
+                if (FAILED(hr))
+                {
+                    OutputDebugString(L"Error loading normal texture \"");
+                    OutputDebugString(fullPath.c_str());
+                    OutputDebugString(L"\"\n");
+
+                    return hr;
+                }
+
+                OutputDebugString(L"Loaded normal texture \"");
+                OutputDebugString(fullPath.c_str());
+                OutputDebugString(L"\"\n");
+            }
+        }
+
+        return hr;
+    }
+
+
+    /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   Model::loadTextures
       Summary:  Load a specular texture from given path
       Args:     ID3D11Device* pDevice
@@ -996,23 +1049,24 @@ namespace library
         HRESULT hr = loadDiffuseTexture(pDevice, pImmediateContext, parentDirectory, pMaterial, uIndex);
         if (FAILED(hr))
         {
-            OutputDebugString(L"Error loading diffuse texture \"");
-            OutputDebugString(L"\"\n");
-
             return hr;
         }
 
         hr = loadSpecularTexture(pDevice, pImmediateContext, parentDirectory, pMaterial, uIndex);
         if (FAILED(hr))
         {
-            OutputDebugString(L"Error loading specular texture \"");
-            OutputDebugString(L"\"\n");
+            return hr;
+        }
 
+        hr = loadNormalTexture(pDevice, pImmediateContext, parentDirectory, pMaterial, uIndex);
+        if (FAILED(hr))
+        {
             return hr;
         }
 
         return hr;
     }
+    
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   Model::readNodeHierarchy

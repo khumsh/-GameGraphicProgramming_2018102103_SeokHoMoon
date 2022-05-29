@@ -1,9 +1,12 @@
 ﻿/*+===================================================================
   File:      COMMON.H
+
   Summary:   Common header file that contains common header files and
              macros used for the Library project of Game Graphics
              Programming course.
+
   Functions:
+
   � 2022 Kyung Hee University
 ===================================================================+*/
 #pragma once
@@ -42,19 +45,18 @@
 
 #include "Resource.h"
 
-#define NUM_LIGHTS (2)
-
 constexpr LPCWSTR PSZ_COURSE_TITLE = L"Game Graphics Programming";
 
 using namespace Microsoft::WRL;
 using namespace DirectX;
 
-#define ASSIMP_LOAD_FLAGS (aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices | aiProcess_ConvertToLeftHanded)
+#define ASSIMP_LOAD_FLAGS (aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices | aiProcess_ConvertToLeftHanded | aiProcess_CalcTangentSpace)
 
 namespace library
 {
     /*S+S+++S+++S+++S+++S+++S+++S+++S+++S+++S+++S+++S+++S+++S+++S+++S+++S
         Struct:   DirectionsInput
+
         Summary:  Data structure that stores keyboard movement data
     S---S---S---S---S---S---S---S---S---S---S---S---S---S---S---S---S-S*/
     struct DirectionsInput
@@ -69,6 +71,7 @@ namespace library
 
     /*S+S+++S+++S+++S+++S+++S+++S+++S+++S+++S+++S+++S+++S+++S+++S+++S+++S
         Struct:   MouseRelativeMovement
+
         Summary:  Data structure that stores mouse relative movement data
     S---S---S---S---S---S---S---S---S---S---S---S---S---S---S---S---S-S*/
     struct MouseRelativeMovement
@@ -79,6 +82,7 @@ namespace library
 
     /*E+E+++E+++E+++E+++E+++E+++E+++E+++E+++E+++E+++E+++E+++E+++E+++E+++E
         Enum:     eBlockType
+
         Summary:  Enumeration of block types
     E---E---E---E---E---E---E---E---E---E---E---E---E---E---E---E---E-E*/
     enum class eBlockType : CHAR

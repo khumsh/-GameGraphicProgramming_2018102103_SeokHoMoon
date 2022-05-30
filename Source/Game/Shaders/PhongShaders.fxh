@@ -10,8 +10,9 @@
 // Global Variables
 //--------------------------------------------------------------------------------------
 
-Texture2D txDiffuse : register(t0);
-SamplerState samLinear : register(s0);
+Texture2D aTextures[2] : register(t0);
+SamplerState aSamplers[2] : register(s0);
+
 
 //--------------------------------------------------------------------------------------
 // Constant Buffer Variables
@@ -45,7 +46,9 @@ C---C---C---C---C---C---C---C---C---C---C---C---C---C---C---C---C-C*/
 cbuffer cbChangesEveryFrame : register(b2)
 {
     matrix World;
-	float4 OutputColor;
+    float4 OutputColor;
+    bool HasNormalMap;
+
 };
 
 /*C+C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C
@@ -67,9 +70,12 @@ C---C---C---C---C---C---C---C---C---C---C---C---C---C---C---C---C-C*/
 
 struct VS_PHONG_INPUT
 {
-    float4 Pos : POSITION;
-    float2 Tex : TEXCOORD0;
+    float4 Position : POSITION;
+    float2 TexCoord : TEXCOORD0;
     float3 Normal : NORMAL;
+    float3 Tangent : TANGENT;
+    float3 Bitangent : BITANGENT;
+
 };
 
 /*C+C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C
@@ -79,10 +85,13 @@ struct VS_PHONG_INPUT
 C---C---C---C---C---C---C---C---C---C---C---C---C---C---C---C---C-C*/
 struct PS_PHONG_INPUT
 {
-    float4 Pos : SV_POSITION;
-    float2 Tex : TEXCOORD0;
-    float3 Normal: NORMAL;
+    float4 Position : SV_POSITION;
+    float2 TexCoord : TEXCOORD0;
+    float3 Normal : NORMAL;
     float3 WorldPosition : WORLDPOS;
+    float3 Tangent : TANGENT;
+    float3 Bitangent : BITANGENT;
+
 };
 
 
@@ -103,15 +112,23 @@ struct PS_LIGHT_CUBE_INPUT
 
 PS_PHONG_INPUT VSPhong( VS_PHONG_INPUT input )
 {
-    PS_PHONG_INPUT output = (PS_PHONG_INPUT)0;
-    output.Pos = mul( input.Pos, World );
-    output.Pos = mul( output.Pos, View );
-    output.Pos = mul( output.Pos, Projection );
-
-    output.Tex = input.Tex;
-
+   
+    
+    PS_PHONG_INPUT output = (PS_PHONG_INPUT) 0;
+    
+    output.Position = mul(input.Position, World);
+    output.Position = mul(output.Position, View);
+    output.Position = mul(output.Position, Projection);
+    
+    output.TexCoord = input.TexCoord;
     output.Normal = normalize(mul(float4(input.Normal, 0), World).xyz);
-    output.WorldPosition = mul( input.Pos, World );
+    output.WorldPosition = mul(input.Position, World);
+    
+    if (HasNormalMap)
+    {
+        output.Tangent = normalize(mul(float4(input.Tangent, 0), World).xyz);
+        output.Bitangent = normalize(mul(float4(input.Bitangent, 0), World).xyz);
+    }
     
     return output;
 }
@@ -120,9 +137,9 @@ PS_PHONG_INPUT VSPhong( VS_PHONG_INPUT input )
 PS_LIGHT_CUBE_INPUT VSLightCube( VS_PHONG_INPUT input )
 {
     PS_LIGHT_CUBE_INPUT output = (PS_LIGHT_CUBE_INPUT)0;
-    output.Pos = mul( input.Pos, World );
-    output.Pos = mul( output.Pos, View );
-    output.Pos = mul( output.Pos, Projection );
+    output.Pos = mul(input.Position, World);
+    output.Pos = mul(output.Pos, View);
+    output.Pos = mul(output.Pos, Projection);
     
     return output;
 }
@@ -143,29 +160,40 @@ float4 PSPhong( PS_PHONG_INPUT input) : SV_Target
     (Ambience term * color) * (light color) = ma * sa
     */
 
+    float3 normal = normalize(input.Normal);
+    if (HasNormalMap)
+    {
+        float3 normalSample = aTextures[1].Sample(aSamplers[1], input.TexCoord).xyz;
+        normalSample = (normalSample * 2.0f) - 1.0f;
+        normalSample = (normalSample.x * input.Tangent) + (normalSample.y * input.Bitangent) + (normalSample.z * normal);
+        normalSample = normalize(normalSample);
+        normal = normalSample;
+    }
 
-	float3 diffuse = float3(0.0f, 0.0f, 0.0f);
+    float3 diffuse = float3(0.0f, 0.0f, 0.0f);
     float3 ambience = float3(0.1f, 0.1f, 0.1f);
-	float3 ambienceTerm = float3(0.0f, 0.0f, 0.0f);
-	float3 specular = float3(0.0f, 0.0f, 0.0f);
-	float3 viewDirection = normalize(input.WorldPosition - CameraPosition.xyz);
+    float3 ambienceTerm = float3(0.0f, 0.0f, 0.0f);
+    float3 specular = float3(0.0f, 0.0f, 0.0f);
+    float3 viewDirection = normalize(input.WorldPosition - CameraPosition.xyz);
     
-    for (uint i = 0; i < NUM_LIGHTS; ++i)  
-    {     
+    for (uint i = 0; i < NUM_LIGHTS; ++i)
+    {
         // (Ambience term * color) * (light color) = ma * sa
-        ambienceTerm += (ambience * txDiffuse.Sample(samLinear, input.Tex).rgb) * LightColors[i].xyz;  
+        ambienceTerm += (ambience * aTextures[0].Sample(aSamplers[0], input.TexCoord).rgb) * LightColors[i].xyz;
         
         float3 lightDirection = normalize(input.WorldPosition - LightPositions[i].xyz);
-		float lambertianTerm = dot(normalize(input.Normal), -lightDirection);
-		diffuse += max(lambertianTerm, 0.0f) * txDiffuse.Sample(samLinear, input.Tex).rgb * LightColors[i].xyz;
+        float lambertianTerm = dot(normalize(normal), -lightDirection);
+        diffuse += max(lambertianTerm, 0.0f) * aTextures[0].Sample(aSamplers[0], input.TexCoord).rgb * LightColors[i].xyz;
         
-		float3 reflectDirection = normalize(reflect(lightDirection, input.Normal));
-		specular += pow(max(dot(-viewDirection, reflectDirection), 0.0f), 8.0f) 
-                    * LightColors[i].xyz * txDiffuse.Sample(samLinear, input.Tex).rgb;
+        float3 reflectDirection = normalize(reflect(lightDirection, normal));
+        specular += pow(max(dot(-viewDirection, reflectDirection), 0.0f), 8.0f)
+                    * LightColors[i].xyz;
     }
     
 
     return float4(saturate(diffuse + ambienceTerm + specular), 1.0f);
+    
+    
 
 }
 

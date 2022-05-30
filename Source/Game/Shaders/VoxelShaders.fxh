@@ -10,8 +10,8 @@
 // Global Variables
 //--------------------------------------------------------------------------------------
 
-Texture2D txDiffuse : register(t0);
-SamplerState samLinear : register(s0);
+Texture2D aTextures[2] : register(t0);
+SamplerState aSamplers[2] : register(s0);
 
 //--------------------------------------------------------------------------------------
 // Constant Buffer Variables
@@ -47,6 +47,7 @@ cbuffer cbChangesEveryFrame : register(b2)
 {
     matrix World;
     float4 OutputColor;
+    bool HasNormalMap;
 };
 
 /*C+C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C
@@ -70,8 +71,10 @@ C---C---C---C---C---C---C---C---C---C---C---C---C---C---C---C---C-C*/
 struct VS_INPUT
 {
     float4 Position : POSITION;
+    float2 TexCoord : TEXCOORD0;
     float3 Normal : NORMAL;
-    
+    float3 Tangent : TANGENT;
+    float3 Bitangent : BITANGENT;
     row_major matrix Transform : INSTANCE_TRANSFORM;
 };
 
@@ -84,8 +87,11 @@ C---C---C---C---C---C---C---C---C---C---C---C---C---C---C---C---C-C*/
 struct PS_INPUT
 {
     float4 Position : SV_POSITION;
+    float2 TexCoord : TEXCOORD0;
     float3 Normal : NORMAL;
     float3 WorldPosition : WORLDPOS;
+    float3 Tangent : TANGENT;
+    float3 Bitangent : BITANGENT;
 };
 
 //--------------------------------------------------------------------------------------
@@ -94,15 +100,26 @@ struct PS_INPUT
 
 PS_INPUT VSVoxel(VS_INPUT input)
 {
-    PS_INPUT output = (PS_INPUT) 0;
+    
+    PS_INPUT output;
+    
     
     output.Position = mul(input.Position, input.Transform);
-    output.WorldPosition = mul(output.Position, World); 
-
+    output.WorldPosition = mul(output.Position, World);
+    
     output.Position = mul(output.Position, World);
     output.Position = mul(output.Position, View);
     output.Position = mul(output.Position, Projection);
+    
+    output.TexCoord = input.TexCoord;
     output.Normal = normalize(mul(float4(input.Normal, 0), World).xyz);
+    
+    if (HasNormalMap)
+    {
+        output.Tangent = normalize(mul(float4(input.Tangent, 0), World).xyz);
+        output.Bitangent = normalize(mul(float4(input.Bitangent, 0), World).xyz);
+    }
+    
     
     return output;
 }
@@ -124,6 +141,15 @@ float4 PSVoxel(PS_INPUT input) : SV_Target
     (Ambience term * color) * (light color) = ma * sa
     */
 
+    float3 normal = normalize(input.Normal);
+    if (HasNormalMap)
+    {
+        float3 normalSample = aTextures[1].Sample(aSamplers[1], input.TexCoord).xyz;
+        normalSample = (normalSample * 2.0f) - 1.0f;
+        normalSample = (normalSample.x * input.Tangent) + (normalSample.y * input.Bitangent) + (normalSample.z * normal);
+        normalSample = normalize(normalSample);
+        normal = normalSample;
+    }
 
     float3 diffuse = float3(0.0f, 0.0f, 0.0f);
     float3 ambience = float3(0.1f, 0.1f, 0.1f);
@@ -133,11 +159,11 @@ float4 PSVoxel(PS_INPUT input) : SV_Target
     for (uint i = 0; i < NUM_LIGHTS; ++i)
     {
         // (Ambience term * color) * (light color) = ma * sa
-        ambienceTerm += ambience * OutputColor.xyz * LightColors[i].xyz;
+        ambienceTerm += ambience * aTextures[0].Sample(aSamplers[0], input.TexCoord).xyz * LightColors[i].xyz;
         
         float3 lightDirection = normalize(input.WorldPosition - LightPositions[i].xyz);
-        float lambertianTerm = dot(normalize(input.Normal), -lightDirection);
-        diffuse += max(lambertianTerm, 0.0f) * OutputColor.xyz * LightColors[i].xyz;
+        float lambertianTerm = dot(normalize(normal), -lightDirection);
+        diffuse += max(lambertianTerm, 0.0f) * aTextures[0].Sample(aSamplers[0], input.TexCoord).xyz * LightColors[i].xyz;
         
     }
     

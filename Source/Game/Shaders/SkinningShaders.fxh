@@ -49,6 +49,7 @@ cbuffer cbChangesEveryFrame : register(b2)
 {
     matrix World;
     float4 OutputColor;
+    bool HasNormalMap;
 };
 
 /*C+C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C
@@ -113,7 +114,7 @@ struct PS_INPUT
 // Vertex Shader
 //--------------------------------------------------------------------------------------
 
-PS_INPUT VSSkinning(VS_INPUT input)
+PS_INPUT VSPhong(VS_INPUT input)
 {
     PS_INPUT output = (PS_INPUT) 0;
     
@@ -143,7 +144,7 @@ PS_INPUT VSSkinning(VS_INPUT input)
 //--------------------------------------------------------------------------------------
 
 
-float4 PSSkinning(PS_INPUT input) : SV_Target
+float4 PSPhong(PS_INPUT input) : SV_Target
 {
     /*
     Ambient light

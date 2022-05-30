@@ -18,20 +18,21 @@ namespace library
                  m_pixelShader, m_outputColor, m_world, m_bHasNormalMap
                  m_aNormalData].
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: Renderable::Renderable definition (remove the comment)
-    --------------------------------------------------------------------*/
 
     Renderable::Renderable(_In_ const XMFLOAT4& outputColor)
         :m_vertexBuffer(nullptr),
         m_indexBuffer(nullptr),
         m_constantBuffer(nullptr),
+        m_normalBuffer(nullptr),
         m_aMeshes(std::vector<BasicMeshEntry>()),
-        m_aMaterials(std::vector<Material>()),
+        m_aMaterials(std::vector<std::shared_ptr<Material>>()),
         m_vertexShader(nullptr),
         m_pixelShader(nullptr),
         m_world(XMMatrixIdentity()),
-        m_outputColor(outputColor)
+        m_outputColor(outputColor),
+        m_bHasNormalMap(FALSE),
+        m_aNormalData(std::vector<NormalData>()),
+        m_padding()
     {
     }
 
@@ -49,9 +50,6 @@ namespace library
       Returns:  HRESULT
                   Status code
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: Renderable::initialize definition (remove the comment)
-    --------------------------------------------------------------------*/
     
     HRESULT Renderable::initialize(_In_ ID3D11Device* pDevice, _In_ ID3D11DeviceContext* pImmediateContext)
     {
@@ -80,6 +78,36 @@ namespace library
             &vertex_bd,
             &vertex_initData,
             m_vertexBuffer.GetAddressOf()
+        );
+        if (FAILED(hr))
+        {
+            return hr;
+        }
+
+        if (HasTexture() && m_aNormalData.empty())
+        {
+            calculateNormalMapVectors();
+        }
+
+        // Create m_normalBuffer vertex buffer
+        D3D11_BUFFER_DESC normal_bd = {
+            .ByteWidth = sizeof(NormalData) * (UINT)m_aNormalData.size(),
+            .Usage = D3D11_USAGE_DEFAULT,
+            .BindFlags = D3D11_BIND_VERTEX_BUFFER,
+            .CPUAccessFlags = 0,
+            .MiscFlags = 0,
+            .StructureByteStride = 0
+        };
+        D3D11_SUBRESOURCE_DATA normal_initData = {
+            .pSysMem = m_aNormalData.data(),
+            .SysMemPitch = 0,
+            .SysMemSlicePitch = 0
+        };
+
+        hr = pDevice->CreateBuffer(
+            &normal_bd,
+            &normal_initData,
+            m_normalBuffer.GetAddressOf()
         );
         if (FAILED(hr))
         {
@@ -147,7 +175,7 @@ namespace library
             return hr;
         }
 
-        
+ 
         
 
         return S_OK;
@@ -158,9 +186,29 @@ namespace library
       Summary:  Calculate tangent and bitangent vectors of every vertex
       Modifies: [m_aNormalData].
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: Renderable::calculateNormalMapVectors definition (remove the comment)
-    --------------------------------------------------------------------*/
+
+    void Renderable::calculateNormalMapVectors()
+    {
+        UINT uNumFaces = GetNumIndices() / 3;
+        const SimpleVertex* aVertices = getVertices();
+        const WORD* aIndices = getIndices();
+
+        m_aNormalData.resize(GetNumVertices(), NormalData());
+
+        XMFLOAT3 tangent = XMFLOAT3(0.f, 0.f, 0.f);
+        XMFLOAT3 bitangent = XMFLOAT3(0.f, 0.f, 0.f);
+
+        for (UINT i = 0; i < uNumFaces; ++i)
+        {
+            calculateTangentBitangent(aVertices[aIndices[i * 3]], aVertices[aIndices[i * 3 + 1]], aVertices[aIndices[i * 3 + 2]], tangent, bitangent);
+            m_aNormalData[aIndices[i * 3]].Tangent = tangent;
+            m_aNormalData[aIndices[i * 3]].Bitangent = bitangent;
+            m_aNormalData[aIndices[i * 3 + 1]].Tangent = tangent;
+            m_aNormalData[aIndices[i * 3 + 1]].Bitangent = bitangent;
+            m_aNormalData[aIndices[i * 3 + 2]].Tangent = tangent;
+            m_aNormalData[aIndices[i * 3 + 2]].Bitangent = bitangent;
+        }
+    }
 
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
@@ -333,7 +381,6 @@ namespace library
         return m_vertexShader->GetVertexLayout();
     }
 
-
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   Renderable::GetVertexBuffer
       Summary:  Returns the vertex buffer
@@ -376,9 +423,11 @@ namespace library
      Returns:  ComPtr<ID3D11Buffer>&
                  Normal buffer
    M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-   /*--------------------------------------------------------------------
-     TODO: Renderable::GetNormalBuffer definition (remove the comment)
-   --------------------------------------------------------------------*/
+
+    ComPtr<ID3D11Buffer>& Renderable::GetNormalBuffer()
+    {
+        return m_normalBuffer;
+    }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   Renderable::GetWorldMatrix
@@ -427,10 +476,8 @@ namespace library
       Returns:  std::shared_ptr<Material>&
                   Material
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: Renderable::GetMaterial definition (remove the comment)
-    --------------------------------------------------------------------*/
-    const std::shared_ptr<Material>& GetMaterial(UINT uIndex) const
+
+    const std::shared_ptr<Material>& Renderable::GetMaterial(UINT uIndex) const
     {
         assert(uIndex < m_aMaterials.size());
 
@@ -470,7 +517,6 @@ namespace library
                   Angle of rotation around the y-axis, in radians
       Modifies: [m_world].
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-
 
     void Renderable::RotateY(_In_ FLOAT angle)
     {
@@ -566,7 +612,9 @@ namespace library
       Summary:  Return whether the renderable has normal map
       Returns:  BOOL
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: Renderable::HasNormalMap definition (remove the comment)
-    --------------------------------------------------------------------*/
+
+    BOOL Renderable::HasNormalMap() const
+    {
+        return m_bHasNormalMap;
+    }
 }

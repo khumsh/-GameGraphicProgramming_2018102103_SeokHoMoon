@@ -7,12 +7,12 @@ namespace library
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   PointLight::PointLight
       Summary:  Constructor
-      Args:     const XMFLOAT4& position
-                  Position of the light
-                const XMFLOAT4& color
-                  Position of the color
-      Modifies: [m_position, m_color].
+      Modifies: [m_position, m_color, m_eye, m_at,
+                 m_up, m_view, m_projection].
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
+    /*--------------------------------------------------------------------
+      TODO: PointLight::PointLight definition (remove the comment)
+    --------------------------------------------------------------------*/
 
     PointLight::PointLight(_In_ const XMFLOAT4& position, _In_ const XMFLOAT4& color)
         :m_position(position), m_color(color)
@@ -54,4 +54,33 @@ namespace library
     {
         UNREFERENCED_PARAMETER(deltaTime);
     }
+
+    /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+      Method:   PointLight::GetViewMatrix
+      Summary:  Return the view matrix
+      Returns:  XMMATRIX
+    M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
+    /*--------------------------------------------------------------------
+      TODO: PointLight::GetViewMatrix definition (remove the comment)
+    --------------------------------------------------------------------*/
+
+    /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+      Method:   PointLight::GetProjectionMatrix
+      Summary:  Return the projection matrix
+      Returns:  XMMATRIX
+    M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
+    /*--------------------------------------------------------------------
+      TODO: PointLight::GetProjectionMatrix definition (remove the comment)
+    --------------------------------------------------------------------*/
+
+    /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+      Method:   PointLight::Initialize
+      Summary:  Initialize the projection matrix
+      Args:     UINT uWidth
+                UINT uHeight
+      Modifies: [m_projection]
+    M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
+    /*--------------------------------------------------------------------
+      TODO: PointLight::Initialize definition (remove the comment)
+    --------------------------------------------------------------------*/
 }

@@ -34,11 +34,11 @@
     <Filter Include="리소스 파일\Model">
       <UniqueIdentifier>{b3cf0f55-1994-497b-a216-766517b65de8}</UniqueIdentifier>
     </Filter>
-    <Filter Include="리소스 파일\Model\nanosuit">
-      <UniqueIdentifier>{034c3683-3c72-4c64-bfc6-6cff184a4bb5}</UniqueIdentifier>
-    </Filter>
     <Filter Include="리소스 파일\Model\BobLampClean">
       <UniqueIdentifier>{fe50d482-07ee-4089-89a6-aa02954904c3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="리소스 파일\Model\nanosuit">
+      <UniqueIdentifier>{1d7cbe03-88d3-423b-ab02-0bcaab60c1da}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -99,99 +99,6 @@
     <Image Include="brickwall.dds">
       <Filter>리소스 파일\dds</Filter>
     </Image>
-    <Image Include="nanosuit\arm_dif.png">
-      <Filter>리소스 파일\Model\nanosuit</Filter>
-    </Image>
-    <Image Include="nanosuit\arm_showroom_ddn.png">
-      <Filter>리소스 파일\Model\nanosuit</Filter>
-    </Image>
-    <Image Include="nanosuit\arm_showroom_refl.png">
-      <Filter>리소스 파일\Model\nanosuit</Filter>
-    </Image>
-    <Image Include="nanosuit\arm_showroom_spec.png">
-      <Filter>리소스 파일\Model\nanosuit</Filter>
-    </Image>
-    <Image Include="nanosuit\back.jpg">
-      <Filter>리소스 파일\Model\nanosuit</Filter>
-    </Image>
-    <Image Include="nanosuit\body_dif.png">
-      <Filter>리소스 파일\Model\nanosuit</Filter>
-    </Image>
-    <Image Include="nanosuit\body_showroom_ddn.png">
-      <Filter>리소스 파일\Model\nanosuit</Filter>
-    </Image>
-    <Image Include="nanosuit\body_showroom_refl.png">
-      <Filter>리소스 파일\Model\nanosuit</Filter>
-    </Image>
-    <Image Include="nanosuit\body_showroom_spec.png">
-      <Filter>리소스 파일\Model\nanosuit</Filter>
-    </Image>
-    <Image Include="nanosuit\cell_arm_alpha.png">
-      <Filter>리소스 파일\Model\nanosuit</Filter>
-    </Image>
-    <Image Include="nanosuit\cell_body_alpha.png">
-      <Filter>리소스 파일\Model\nanosuit</Filter>
-    </Image>
-    <Image Include="nanosuit\cell_ddn.png">
-      <Filter>리소스 파일\Model\nanosuit</Filter>
-    </Image>
-    <Image Include="nanosuit\cell_hand_alpha.png">
-      <Filter>리소스 파일\Model\nanosuit</Filter>
-    </Image>
-    <Image Include="nanosuit\cell_helmet_alpha.png">
-      <Filter>리소스 파일\Model\nanosuit</Filter>
-    </Image>
-    <Image Include="nanosuit\cell_leg_alpha.png">
-      <Filter>리소스 파일\Model\nanosuit</Filter>
-    </Image>
-    <Image Include="nanosuit\front.jpg">
-      <Filter>리소스 파일\Model\nanosuit</Filter>
-    </Image>
-    <Image Include="nanosuit\glass_ddn.png">
-      <Filter>리소스 파일\Model\nanosuit</Filter>
-    </Image>
-    <Image Include="nanosuit\glass_dif.png">
-      <Filter>리소스 파일\Model\nanosuit</Filter>
-    </Image>
-    <Image Include="nanosuit\glass_refl.png">
-      <Filter>리소스 파일\Model\nanosuit</Filter>
-    </Image>
-    <Image Include="nanosuit\hand_dif.png">
-      <Filter>리소스 파일\Model\nanosuit</Filter>
-    </Image>
-    <Image Include="nanosuit\hand_showroom_ddn.png">
-      <Filter>리소스 파일\Model\nanosuit</Filter>
-    </Image>
-    <Image Include="nanosuit\hand_showroom_refl.png">
-      <Filter>리소스 파일\Model\nanosuit</Filter>
-    </Image>
-    <Image Include="nanosuit\hand_showroom_spec.png">
-      <Filter>리소스 파일\Model\nanosuit</Filter>
-    </Image>
-    <Image Include="nanosuit\helmet_diff.png">
-      <Filter>리소스 파일\Model\nanosuit</Filter>
-    </Image>
-    <Image Include="nanosuit\helmet_showroom_ddn.png">
-      <Filter>리소스 파일\Model\nanosuit</Filter>
-    </Image>
-    <Image Include="nanosuit\helmet_showroom_refl.png">
-      <Filter>리소스 파일\Model\nanosuit</Filter>
-    </Image>
-    <Image Include="nanosuit\helmet_showroom_spec.png">
-      <Filter>리소스 파일\Model\nanosuit</Filter>
-    </Image>
-    <Image Include="nanosuit\leg_dif.png">
-      <Filter>리소스 파일\Model\nanosuit</Filter>
-    </Image>
-    <Image Include="nanosuit\leg_showroom_ddn.png">
-      <Filter>리소스 파일\Model\nanosuit</Filter>
-    </Image>
-    <Image Include="nanosuit\leg_showroom_refl.png">
-      <Filter>리소스 파일\Model\nanosuit</Filter>
-    </Image>
-    <Image Include="nanosuit\leg_showroom_spec.png">
-      <Filter>리소스 파일\Model\nanosuit</Filter>
-    </Image>
     <Image Include="Content\BobLampClean\guard1_body.jpg">
       <Filter>리소스 파일\Model\BobLampClean</Filter>
     </Image>
@@ -207,6 +114,102 @@
     <Image Include="Content\BobLampClean\round_grill.jpg">
       <Filter>리소스 파일\Model\BobLampClean</Filter>
     </Image>
+    <Image Include="Content\plane.jpg">
+      <Filter>리소스 파일</Filter>
+    </Image>
+    <Image Include="Content\nanosuit\arm_dif.png">
+      <Filter>리소스 파일\Model\nanosuit</Filter>
+    </Image>
+    <Image Include="Content\nanosuit\arm_showroom_ddn.png">
+      <Filter>리소스 파일\Model\nanosuit</Filter>
+    </Image>
+    <Image Include="Content\nanosuit\arm_showroom_refl.png">
+      <Filter>리소스 파일\Model\nanosuit</Filter>
+    </Image>
+    <Image Include="Content\nanosuit\arm_showroom_spec.png">
+      <Filter>리소스 파일\Model\nanosuit</Filter>
+    </Image>
+    <Image Include="Content\nanosuit\back.jpg">
+      <Filter>리소스 파일\Model\nanosuit</Filter>
+    </Image>
+    <Image Include="Content\nanosuit\body_dif.png">
+      <Filter>리소스 파일\Model\nanosuit</Filter>
+    </Image>
+    <Image Include="Content\nanosuit\body_showroom_ddn.png">
+      <Filter>리소스 파일\Model\nanosuit</Filter>
+    </Image>
+    <Image Include="Content\nanosuit\body_showroom_refl.png">
+      <Filter>리소스 파일\Model\nanosuit</Filter>
+    </Image>
+    <Image Include="Content\nanosuit\body_showroom_spec.png">
+      <Filter>리소스 파일\Model\nanosuit</Filter>
+    </Image>
+    <Image Include="Content\nanosuit\cell_arm_alpha.png">
+      <Filter>리소스 파일\Model\nanosuit</Filter>
+    </Image>
+    <Image Include="Content\nanosuit\cell_body_alpha.png">
+      <Filter>리소스 파일\Model\nanosuit</Filter>
+    </Image>
+    <Image Include="Content\nanosuit\cell_ddn.png">
+      <Filter>리소스 파일\Model\nanosuit</Filter>
+    </Image>
+    <Image Include="Content\nanosuit\cell_hand_alpha.png">
+      <Filter>리소스 파일\Model\nanosuit</Filter>
+    </Image>
+    <Image Include="Content\nanosuit\cell_helmet_alpha.png">
+      <Filter>리소스 파일\Model\nanosuit</Filter>
+    </Image>
+    <Image Include="Content\nanosuit\cell_leg_alpha.png">
+      <Filter>리소스 파일\Model\nanosuit</Filter>
+    </Image>
+    <Image Include="Content\nanosuit\front.jpg">
+      <Filter>리소스 파일\Model\nanosuit</Filter>
+    </Image>
+    <Image Include="Content\nanosuit\glass_ddn.png">
+      <Filter>리소스 파일\Model\nanosuit</Filter>
+    </Image>
+    <Image Include="Content\nanosuit\glass_dif.png">
+      <Filter>리소스 파일\Model\nanosuit</Filter>
+    </Image>
+    <Image Include="Content\nanosuit\glass_refl.png">
+      <Filter>리소스 파일\Model\nanosuit</Filter>
+    </Image>
+    <Image Include="Content\nanosuit\hand_dif.png">
+      <Filter>리소스 파일\Model\nanosuit</Filter>
+    </Image>
+    <Image Include="Content\nanosuit\hand_showroom_ddn.png">
+      <Filter>리소스 파일\Model\nanosuit</Filter>
+    </Image>
+    <Image Include="Content\nanosuit\hand_showroom_refl.png">
+      <Filter>리소스 파일\Model\nanosuit</Filter>
+    </Image>
+    <Image Include="Content\nanosuit\hand_showroom_spec.png">
+      <Filter>리소스 파일\Model\nanosuit</Filter>
+    </Image>
+    <Image Include="Content\nanosuit\helmet_diff.png">
+      <Filter>리소스 파일\Model\nanosuit</Filter>
+    </Image>
+    <Image Include="Content\nanosuit\helmet_showroom_ddn.png">
+      <Filter>리소스 파일\Model\nanosuit</Filter>
+    </Image>
+    <Image Include="Content\nanosuit\helmet_showroom_refl.png">
+      <Filter>리소스 파일\Model\nanosuit</Filter>
+    </Image>
+    <Image Include="Content\nanosuit\helmet_showroom_spec.png">
+      <Filter>리소스 파일\Model\nanosuit</Filter>
+    </Image>
+    <Image Include="Content\nanosuit\leg_dif.png">
+      <Filter>리소스 파일\Model\nanosuit</Filter>
+    </Image>
+    <Image Include="Content\nanosuit\leg_showroom_ddn.png">
+      <Filter>리소스 파일\Model\nanosuit</Filter>
+    </Image>
+    <Image Include="Content\nanosuit\leg_showroom_refl.png">
+      <Filter>리소스 파일\Model\nanosuit</Filter>
+    </Image>
+    <Image Include="Content\nanosuit\leg_showroom_spec.png">
+      <Filter>리소스 파일\Model\nanosuit</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\Shaders.fxh">
@@ -214,9 +217,6 @@
     </None>
     <None Include="Shaders\PhongShaders.fxh">
       <Filter>리소스 파일\Shader</Filter>
-    </None>
-    <None Include="nanosuit\nanosuit.mtl">
-      <Filter>리소스 파일\Model\nanosuit</Filter>
     </None>
     <None Include="Shaders\VoxelShaders.fxh">
       <Filter>리소스 파일\Shader</Filter>
@@ -229,6 +229,12 @@
     </None>
     <None Include="Content\BobLampClean\boblampclean.md5mesh">
       <Filter>리소스 파일\Model\BobLampClean</Filter>
+    </None>
+    <None Include="Shaders\ShadowShaders.fxh">
+      <Filter>리소스 파일\Shader</Filter>
+    </None>
+    <None Include="Content\nanosuit\nanosuit.mtl">
+      <Filter>리소스 파일\Model\nanosuit</Filter>
     </None>
   </ItemGroup>
 </Project>

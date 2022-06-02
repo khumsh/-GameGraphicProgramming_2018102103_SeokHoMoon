@@ -84,10 +84,10 @@ namespace library
             return hr;
         }
 
-        if (HasTexture() && m_aNormalData.empty())
-        {
+        if (m_aNormalData.empty()) {
             calculateNormalMapVectors();
         }
+
 
         // Create m_normalBuffer vertex buffer
         D3D11_BUFFER_DESC normal_bd = {

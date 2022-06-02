@@ -47,6 +47,7 @@ namespace library
 	{
 		XMMATRIX World;
 		XMFLOAT4 OutputColor;
+		BOOL HasNormalMap;
 	};
 
 	struct CBSkinning

@@ -10,12 +10,11 @@ namespace library
       Modifies: [m_position, m_color, m_eye, m_at,
                  m_up, m_view, m_projection].
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: PointLight::PointLight definition (remove the comment)
-    --------------------------------------------------------------------*/
 
     PointLight::PointLight(_In_ const XMFLOAT4& position, _In_ const XMFLOAT4& color)
-        :m_position(position), m_color(color)
+        :m_position(position), m_color(color),
+        m_eye(XMVectorSet(position.x, position.y, position.z, position.w)),
+        m_at(XMVECTOR()), m_up(DEFAULT_UP), m_view(XMMATRIX()), m_projection(XMMATRIX())
     {
     }
 
@@ -60,18 +59,22 @@ namespace library
       Summary:  Return the view matrix
       Returns:  XMMATRIX
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: PointLight::GetViewMatrix definition (remove the comment)
-    --------------------------------------------------------------------*/
+
+    const XMMATRIX& PointLight::GetViewMatrix() const
+    {
+        return m_view;
+    }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   PointLight::GetProjectionMatrix
       Summary:  Return the projection matrix
       Returns:  XMMATRIX
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: PointLight::GetProjectionMatrix definition (remove the comment)
-    --------------------------------------------------------------------*/
+
+    const XMMATRIX& PointLight::GetProjectionMatrix() const
+    {
+        return m_projection;
+    }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   PointLight::Initialize
@@ -80,7 +83,12 @@ namespace library
                 UINT uHeight
       Modifies: [m_projection]
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: PointLight::Initialize definition (remove the comment)
-    --------------------------------------------------------------------*/
+
+    void PointLight::Initialize(_In_ UINT uWidth, _In_ UINT uHeight)
+    {
+        // Initialize the projection matrix using XMMatrixPerspectiveFovLH
+        //  The setting is same with the projection matrix of Renderer
+
+        m_projection = XMMatrixPerspectiveFovLH(XM_PIDIV4, static_cast<FLOAT>(uWidth) / static_cast<FLOAT>(uHeight), 0.01f, 1000.0f);
+    }
 }

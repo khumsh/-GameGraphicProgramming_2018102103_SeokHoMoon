@@ -179,3 +179,4 @@ float4 PSPhong(PS_INPUT input) : SV_Target
     return float4(saturate(diffuse + ambienceTerm), 1.0f);
 
 }
+

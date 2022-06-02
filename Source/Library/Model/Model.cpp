@@ -109,7 +109,8 @@ namespace library
         // Read the 3d model file using the importer and get an aiScene
         m_pScene = sm_pImporter->ReadFile(
             m_filePath.string().c_str(),
-            ASSIMP_LOAD_FLAGS // Load flags are provided in Common.h as ASSIMP_LOAD_FLAGS
+            aiProcess_Triangulate | aiProcess_GenSmoothNormals |
+            aiProcess_CalcTangentSpace | aiProcess_ConvertToLeftHanded
         );
 
         // If a valid scene is returned

@@ -71,6 +71,12 @@
     <FxCompile Include="Shaders\VS.hlsl">
       <Filter>리소스 파일\Shader</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\CubeMap_PS.hlsl">
+      <Filter>리소스 파일\Shader</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\CubeMap_VS.hlsl">
+      <Filter>리소스 파일\Shader</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Cube\BaseCube.h">
@@ -235,6 +241,9 @@
     </None>
     <None Include="Content\nanosuit\nanosuit.mtl">
       <Filter>리소스 파일\Model\nanosuit</Filter>
+    </None>
+    <None Include="Shaders\CubeMap.fxh">
+      <Filter>리소스 파일\Shader</Filter>
     </None>
   </ItemGroup>
 </Project>

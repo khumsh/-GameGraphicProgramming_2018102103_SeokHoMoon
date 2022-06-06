@@ -19,9 +19,12 @@ namespace library
 
       Modifies: [m_filePath, m_textureRV, m_textureSamplerType].
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: Texture::Texture definition (remove the comment)
-    --------------------------------------------------------------------*/
+
+    Texture::Texture(_In_ const std::filesystem::path& filePath, _In_opt_ eTextureSamplerType textureSamplerType)
+        :m_filePath(filePath), m_textureRV(nullptr), m_textureSamplerType(textureSamplerType)
+    {
+
+    }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
       Method:   Texture::Initialize
@@ -61,24 +64,35 @@ namespace library
         {
             D3D11_SAMPLER_DESC sampDesc =
             {
-                /*--------------------------------------------------------------------
-                  TODO: Initialize the trilinear wrap sampler (remove the comment)
-                --------------------------------------------------------------------*/
+            
+                .Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR,
+                .AddressU = D3D11_TEXTURE_ADDRESS_WRAP,
+                .AddressV = D3D11_TEXTURE_ADDRESS_WRAP,
+                .AddressW = D3D11_TEXTURE_ADDRESS_WRAP,
+                .ComparisonFunc = D3D11_COMPARISON_ALWAYS,
+                .MinLOD = 0,
+                .MaxLOD = D3D11_FLOAT32_MAX
             };
+
             hr = pDevice->CreateSamplerState(&sampDesc, s_samplers[static_cast<size_t>(eTextureSamplerType::TRILINEAR_WRAP)].GetAddressOf());
             if (FAILED(hr))
             {
                 return hr;
             }
+
         }
 
         if (!s_samplers[static_cast<size_t>(eTextureSamplerType::TRILINEAR_CLAMP)].Get())
         {
             D3D11_SAMPLER_DESC sampDesc =
             {
-                /*--------------------------------------------------------------------
-                  TODO: Initialize the trilinear clamp sampler (remove the comment)
-                --------------------------------------------------------------------*/
+                .Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR,
+                .AddressU = D3D11_TEXTURE_ADDRESS_CLAMP,
+                .AddressV = D3D11_TEXTURE_ADDRESS_CLAMP,
+                .AddressW = D3D11_TEXTURE_ADDRESS_CLAMP,
+                .ComparisonFunc = D3D11_COMPARISON_ALWAYS,
+                .MinLOD = 0,
+                .MaxLOD = D3D11_FLOAT32_MAX
             };
             hr = pDevice->CreateSamplerState(&sampDesc, s_samplers[static_cast<size_t>(eTextureSamplerType::TRILINEAR_CLAMP)].GetAddressOf());
             if (FAILED(hr))

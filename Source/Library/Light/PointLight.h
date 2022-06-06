@@ -43,6 +43,8 @@ namespace library
     protected:
         XMFLOAT4 m_position;
         XMFLOAT4 m_color;
+
         FLOAT m_attenuationDistance;
+
     };
 }

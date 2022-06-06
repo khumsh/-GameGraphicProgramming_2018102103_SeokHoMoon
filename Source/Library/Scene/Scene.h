@@ -44,6 +44,7 @@ namespace library
         HRESULT AddVertexShader(_In_ PCWSTR pszVertexShaderName, _In_ const std::shared_ptr<VertexShader>& vertexShader);
         HRESULT AddPixelShader(_In_ PCWSTR pszPixelShaderName, _In_ const std::shared_ptr<PixelShader>& pixelShader);
         HRESULT AddSkyBox(_In_ const std::shared_ptr<Skybox>& skybox);
+        HRESULT AddMaterial(_In_ const std::shared_ptr<Material>& material);
 
         void Update(_In_ FLOAT deltaTime);
 
@@ -53,6 +54,7 @@ namespace library
         std::shared_ptr<PointLight>& GetPointLight(_In_ size_t index);
         std::unordered_map<std::wstring, std::shared_ptr<VertexShader>>& GetVertexShaders();
         std::unordered_map<std::wstring, std::shared_ptr<PixelShader>>& GetPixelShaders();
+        std::unordered_map<std::wstring, std::shared_ptr<Material>>& GetMaterials();
         std::shared_ptr<Skybox>& GetSkyBox();
 
         const std::filesystem::path& GetFilePath() const;
@@ -96,6 +98,7 @@ namespace library
         std::shared_ptr<PointLight> m_aPointLights[NUM_LIGHTS];
         std::unordered_map<std::wstring, std::shared_ptr<VertexShader>> m_vertexShaders;
         std::unordered_map<std::wstring, std::shared_ptr<PixelShader>> m_pixelShaders;
+        std::unordered_map<std::wstring, std::shared_ptr<Material>> m_materials;
         std::shared_ptr<Skybox> m_skyBox;
     };
 }

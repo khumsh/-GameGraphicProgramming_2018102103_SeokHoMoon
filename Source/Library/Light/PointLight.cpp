@@ -15,12 +15,11 @@ namespace library
                   Attenuation distance
       Modifies: [m_position, m_color, m_attenuationDistance].
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: PointLight::PointLight definition (remove the comment)
-    --------------------------------------------------------------------*/
 
     PointLight::PointLight(_In_ const XMFLOAT4& position, _In_ const XMFLOAT4& color, _In_ FLOAT attenuationDistance)
-        :m_position(position), m_color(color)
+        : m_position(position)
+        , m_color(color)
+        , m_attenuationDistance(attenuationDistance)
         
     {
     }
@@ -55,12 +54,10 @@ namespace library
       Returns:  FLOAT
                   Attenuation distance
     M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-    /*--------------------------------------------------------------------
-      TODO: PointLight::GetAttenuationDistance definition (remove the comment)
-    --------------------------------------------------------------------*/
+
     FLOAT PointLight::GetAttenuationDistance() const
     {
-
+        return m_attenuationDistance;
     }
 
     /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
@@ -74,5 +71,6 @@ namespace library
     {
         UNREFERENCED_PARAMETER(deltaTime);
     }
+
 
 }

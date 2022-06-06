@@ -4,7 +4,7 @@
 // Copyright (c) Kyung Hee University.
 //--------------------------------------------------------------------------------------
 
-#define NUM_LIGHTS (1)
+#define NUM_LIGHTS (2)
 #define NEAR_PLANE (0.01f)
 #define FAR_PLANE (1000.0f)
 
@@ -17,7 +17,6 @@ SamplerState aSamplers[2] : register(s0);
 
 Texture2D shadowMapTexture : register(t2);
 SamplerState shadowMapSampler : register(s2);
-
 
 //--------------------------------------------------------------------------------------
 // Constant Buffer Variables
@@ -61,12 +60,23 @@ cbuffer cbChangesEveryFrame : register(b2)
   Summary:  Constant buffer used for shading
 C---C---C---C---C---C---C---C---C---C---C---C---C---C---C---C---C-C*/
 
+struct PointLight
+{
+    float4 Position;
+    float4 Color;
+    matrix View;
+    matrix Projection;
+    float4 AttenuationDistance;
+};
+
 cbuffer cbLights : register(b3)
 {
-    float4 LightPositions[NUM_LIGHTS];
-    float4 LightColors[NUM_LIGHTS];
-    matrix LightViews[NUM_LIGHTS];
-    matrix LightProjections[NUM_LIGHTS];
+    //float4 LightPositions[NUM_LIGHTS];
+    //float4 LightColors[NUM_LIGHTS];
+    //matrix LightViews[NUM_LIGHTS];
+    //matrix LightProjections[NUM_LIGHTS];
+    
+    PointLight PointLights[NUM_LIGHTS];
 };
 
 //--------------------------------------------------------------------------------------
@@ -109,7 +119,7 @@ C---C---C---C---C---C---C---C---C---C---C---C---C---C---C---C---C-C*/
 
 struct PS_LIGHT_CUBE_INPUT
 {
-    float4 Pos : SV_POSITION;
+    float4 Position : SV_POSITION;
 };
 
 //--------------------------------------------------------------------------------------
@@ -122,8 +132,8 @@ PS_PHONG_INPUT VSPhong(VS_PHONG_INPUT input)
     PS_PHONG_INPUT output = (PS_PHONG_INPUT) 0;
     
     output.LightViewPosition = mul(input.Position, World);
-    output.LightViewPosition = mul(output.LightViewPosition, LightViews[0]);
-    output.LightViewPosition = mul(output.LightViewPosition, LightProjections[0]);
+    output.LightViewPosition = mul(output.LightViewPosition, PointLights[0].View);
+    output.LightViewPosition = mul(output.LightViewPosition, PointLights[0].Projection);
     
     output.Position = mul(input.Position, World);
     output.Position = mul(output.Position, View);
@@ -153,9 +163,9 @@ float LinearizeDepth(float depth)
 PS_LIGHT_CUBE_INPUT VSLightCube(VS_PHONG_INPUT input)
 {
     PS_LIGHT_CUBE_INPUT output = (PS_LIGHT_CUBE_INPUT) 0;
-    output.Pos = mul(input.Position, World);
-    output.Pos = mul(output.Pos, View);
-    output.Pos = mul(output.Pos, Projection);
+    output.Position = mul(input.Position, World);
+    output.Position = mul(output.Position, View);
+    output.Position = mul(output.Position, Projection);
     
     return output;
 }
@@ -201,16 +211,21 @@ float4 PSPhong(PS_PHONG_INPUT input) : SV_Target
     
     for (uint i = 0; i < NUM_LIGHTS; ++i)
     {
-        // (Ambience term * color) * (light color) = ma * sa
-        ambienceTerm += (ambience * aTextures[0].Sample(aSamplers[0], input.TexCoord).rgb) * LightColors[i].xyz;
+        float attenuationEpsilon = 0.000001f;
+        float sqrDistance = dot(input.WorldPosition - PointLights[i].Position.xyz, input.WorldPosition - PointLights[i].Position.xyz);
+        float attenuationFactor = PointLights[i].AttenuationDistance.z / (sqrDistance + attenuationEpsilon);
+        float4 attenuationLightColor = PointLights[i].Color * attenuationFactor;
         
-        float3 lightDirection = normalize(input.WorldPosition - LightPositions[i].xyz);
-        float lambertianTerm = dot(normalize(normal), -lightDirection);
-        diffuse += max(lambertianTerm, 0.0f) * aTextures[0].Sample(aSamplers[0], input.TexCoord).rgb * LightColors[i].xyz;
+        float3 lightDirection = normalize(input.WorldPosition - PointLights[i].Position.xyz);
+        
+        
+        // (Ambience term * color) * (light color) = ma * sa
+        ambienceTerm += (ambience * aTextures[0].Sample(aSamplers[0], input.TexCoord).rgb) * attenuationLightColor.xyz;
+        
+        diffuse += max(dot(normal, -lightDirection), 0) * attenuationLightColor.xyz;
         
         float3 reflectDirection = normalize(reflect(lightDirection, normal));
-        specular += pow(max(dot(-viewDirection, reflectDirection), 0.0f), 8.0f)
-                    * LightColors[i].xyz;
+        specular += pow(max(dot(-viewDirection, reflectDirection), 0.0f), 8.0f) * attenuationLightColor.xyz;
     }
     
 
